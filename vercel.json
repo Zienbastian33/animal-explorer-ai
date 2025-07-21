@@ -52,8 +52,8 @@
     }
   ],
   "env": {
-    "OPENAI_API_KEY": "@openai_api_key",
-    "IMAGE_GENERATION_FUNCTION_URL": "@image_generation_function_url",
+    "OPENAI_API_KEY": "$OPENAI_API_KEY",
+    "IMAGE_GENERATION_FUNCTION_URL": "$IMAGE_GENERATION_FUNCTION_URL",
     "PYTHONPATH": "."
   }
 }
