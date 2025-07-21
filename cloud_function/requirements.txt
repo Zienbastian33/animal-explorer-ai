@@ -1,8 +1,4 @@
 functions-framework==3.*
-google-cloud-aiplatform>=1.38.0
-google-cloud-storage>=2.10.0
-<<<<<<< HEAD
-Pillow>=10.0.0
-=======
-Pillow>=10.0.0
->>>>>>> d8c5f21840aaa5dcdf9c7a83abf6e7dbc04b23a5
+google-cloud-aiplatform==1.40.0
+Pillow==10.1.0
+google-auth==2.25.2

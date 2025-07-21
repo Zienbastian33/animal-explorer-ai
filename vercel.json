@@ -16,8 +16,4 @@
     "OPENAI_API_KEY": "@openai_api_key",
     "IMAGE_GENERATION_FUNCTION_URL": "@image_generation_function_url"
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> d8c5f21840aaa5dcdf9c7a83abf6e7dbc04b23a5

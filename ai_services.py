@@ -207,8 +207,4 @@ class ImageGenerationService:
 
 # Service instances
 animal_info_service = AnimalInfoService()
-<<<<<<< HEAD
 image_generation_service = ImageGenerationService()
-=======
-image_generation_service = ImageGenerationService()
->>>>>>> d8c5f21840aaa5dcdf9c7a83abf6e7dbc04b23a5
