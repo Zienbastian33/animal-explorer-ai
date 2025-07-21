@@ -4,7 +4,7 @@
 # Make sure you have gcloud CLI installed and authenticated
 
 # Set your project variables
-PROJECT_ID="your-google-project-id"
+PROJECT_ID="primeval-rune-463414-j2"
 FUNCTION_NAME="generate-animal-image"
 REGION="us-central1"
 
@@ -16,7 +16,7 @@ gcloud functions deploy $FUNCTION_NAME \
   --region=$REGION \
   --source=. \
   --entry-point=generate_animal_image \
-  --trigger=http \
+  --trigger-http \
   --allow-unauthenticated \
   --memory=2GB \
   --timeout=300s \

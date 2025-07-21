@@ -72,8 +72,6 @@ def generate_animal_image(request):
             prompt=prompt,
             number_of_images=1,
             language="en",
-            aspect_ratio="1:1",
-            safety_filter_level="block_medium_and_above",
             person_generation="dont_allow",
             add_watermark=False
         )
