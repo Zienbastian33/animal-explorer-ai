@@ -10,6 +10,7 @@ import time
 
 from ai_services import animal_info_service, image_generation_service
 from config import config
+from session_service import session_service
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -23,52 +24,11 @@ templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 # Note: No uploads mount needed - using data URLs for images
 
-# En Vercel, necesitamos una solución más resistente para las sesiones en serverless
-# Usaremos cadenas JSON en cookies para almacenar datos entre solicitudes
+# Importaciones adicionales para manejo de sesiones
 import json
 from fastapi.responses import JSONResponse
 from fastapi import Cookie
 from typing import Optional
-
-# Constantes para las cookies
-SESSION_COOKIE = "animal_explorer_session"
-SESSION_TTL = 3600  # 1 hora en segundos
-
-# Almacenamiento temporal en memoria (sigue siendo útil para operaciones dentro de una misma función)
-sessions = {}
-
-def set_session_cookie(response: JSONResponse, session_id: str, data: dict):
-    """Establece una cookie con los datos de sesión"""
-    # Crear una versión simplificada para la cookie (solo lo necesario)
-    cookie_data = {
-        "id": session_id,
-        "status": data.get("status", "unknown"),
-        "created_at": data.get("created_at", time.time())
-    }
-    # Si hay imagen o info disponible, marcarlos
-    if data.get("info"):
-        cookie_data["has_info"] = True
-    if data.get("image"):
-        cookie_data["has_image"] = True
-    
-    # Establecer cookie (no incluir la imagen completa para evitar cookies enormes)
-    response.set_cookie(
-        key=SESSION_COOKIE,
-        value=json.dumps(cookie_data),
-        max_age=SESSION_TTL,
-        httponly=True,
-        samesite="lax"
-    )
-    return response
-
-def get_session(session_id: str) -> Dict:
-    """Obtiene datos de sesión de la memoria temporal"""
-    # Si existe en memoria local, usarlo
-    if session_id in sessions:
-        return sessions[session_id]
-    
-    # Sino, crear uno vacío
-    return None
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -84,18 +44,19 @@ async def research_animal(request: Request, animal: str = Form(...)):
     # Generar ID de sesión
     session_id = str(uuid.uuid4())
     
-    # Inicializar datos de sesión con timestamp
+    # Inicializar datos de sesión
     session_data = {
         "animal": animal,
         "status": "processing",
         "info": None,
         "image": None,
-        "errors": [],
-        "created_at": time.time()
+        "errors": []
     }
     
-    # Guardar en memoria local (útil para procesamiento inmediato)
-    sessions[session_id] = session_data
+    # Crear sesión persistente
+    success = session_service.create_session(session_id, session_data)
+    if not success:
+        raise HTTPException(status_code=500, detail="Error al crear sesión")
     
     # Iniciar procesamiento en background
     asyncio.create_task(process_animal_research(session_id, animal))
@@ -110,87 +71,93 @@ async def research_animal(request: Request, animal: str = Form(...)):
         }
     )
     
-    # Establecer cookie inicial (para tracking)
-    response = set_session_cookie(response, session_id, session_data)
-    
     return response
 
 @app.get("/status/{session_id}")
-async def get_status(
-    session_id: str,
-    session_cookie: Optional[str] = Cookie(None, alias=SESSION_COOKIE)
-):
+async def get_status(session_id: str):
     """Obtener estado del procesamiento"""
     print(f"[DEBUG] Status request for session_id: {session_id}")
-    print(f"[DEBUG] Available sessions: {list(sessions.keys())}")
-    print(f"[DEBUG] Session cookie: {session_cookie[:50] if session_cookie else 'None'}...")
     
-    # Intentar obtener datos de la sesión en memoria
-    session_data = get_session(session_id)
-    
-    # Si no se encuentra en memoria, pero existe una cookie, crear respuesta especial
-    if not session_data and session_cookie:
-        try:
-            # Intentar cargar los datos de la cookie
-            cookie_data = json.loads(session_cookie)
-            if cookie_data.get("id") == session_id:
-                # Si la sesión ya estaba completa, devolver un estado especial
-                if cookie_data.get("status") == "completed":
-                    return JSONResponse({
-                        "status": "reload_required",
-                        "message": "Tu sesión está completa pero se ha perdido. Recarga la página."
-                    })
-        except:
-            pass
+    # Obtener datos de la sesión persistente
+    session_data = session_service.get_session(session_id)
     
     # Si no hay datos de sesión
     if not session_data:
+        print(f"[DEBUG] Session {session_id} not found")
         raise HTTPException(status_code=404, detail="Sesión no encontrada o expirada")
     
-    # Crear respuesta con los datos actuales
-    response = JSONResponse(session_data)
+    print(f"[DEBUG] Session {session_id} status: {session_data.get('status')}")
     
-    # Si la sesión está completa o tiene un error, almacenar en cookie
-    if session_data.get("status") in ["completed", "error"]:
-        response = set_session_cookie(response, session_id, session_data)
-        
-    return response
+    # Extender TTL de la sesión si está activa
+    if session_data.get("status") not in ["completed", "error"]:
+        session_service.extend_session(session_id)
+    
+    # Crear respuesta con los datos actuales
+    return JSONResponse(session_data)
 
 async def process_animal_research(session_id: str, animal: str):
     """Process animal research in background"""
     try:
-        # Update status
-        sessions[session_id]["status"] = "getting_info"
+        # Obtener datos actuales de la sesión
+        session_data = session_service.get_session(session_id)
+        if not session_data:
+            print(f"[ERROR] Session {session_id} not found during processing")
+            return
+        
+        # Update status: getting info
+        session_data["status"] = "getting_info"
+        session_service.update_session(session_id, session_data)
         
         # Step 1: Get animal information
         info_result = await animal_info_service.get_animal_info_async(animal)
         
+        # Obtener datos actualizados
+        session_data = session_service.get_session(session_id)
+        if not session_data:
+            return
+            
         if not info_result.get('success'):
-            sessions[session_id]["errors"].append(f"Info error: {info_result.get('error')}")
-            sessions[session_id]["status"] = "error"
+            session_data["errors"].append(f"Info error: {info_result.get('error')}")
+            session_data["status"] = "error"
+            session_service.update_session(session_id, session_data)
             return
         
-        sessions[session_id]["info"] = info_result['content']
+        session_data["info"] = info_result['content']
         
-        # Update status
-        sessions[session_id]["status"] = "generating_image"
+        # Update status: generating image
+        session_data["status"] = "generating_image"
+        session_service.update_session(session_id, session_data)
         
         # Step 2: Generate image
         image_result = await image_generation_service.generate_image_async(animal)
         
-        if not image_result.get('success'):
-            sessions[session_id]["errors"].append(f"Image error: {image_result.get('error')}")
-            sessions[session_id]["status"] = "error"
+        # Obtener datos actualizados nuevamente
+        session_data = session_service.get_session(session_id)
+        if not session_data:
             return
             
-        sessions[session_id]["image"] = image_result['image_data_url']
+        if not image_result.get('success'):
+            session_data["errors"].append(f"Image error: {image_result.get('error')}")
+            session_data["status"] = "error"
+            session_service.update_session(session_id, session_data)
+            return
+            
+        session_data["image"] = image_result['image_data_url']
         
         # Complete
-        sessions[session_id]["status"] = "completed"
+        session_data["status"] = "completed"
+        session_service.update_session(session_id, session_data)
+        
+        print(f"[INFO] Successfully completed research for session {session_id}")
         
     except Exception as e:
-        sessions[session_id]["status"] = "error"
-        sessions[session_id]["errors"].append(f"Unexpected error: {str(e)}")
+        print(f"[ERROR] Unexpected error in session {session_id}: {str(e)}")
+        # Intentar actualizar el estado de error
+        session_data = session_service.get_session(session_id)
+        if session_data:
+            session_data["status"] = "error"
+            session_data["errors"].append(f"Unexpected error: {str(e)}")
+            session_service.update_session(session_id, session_data)
 
 @app.get("/api/animal/{animal}")
 async def api_get_animal_info(animal: str):
