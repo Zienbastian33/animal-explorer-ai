@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Explorer AI</title>
+    <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐾 Explorador de Animales con IA</h1>
+            <p>Descubre información fascinante y genera imágenes de cualquier animal usando IA avanzada</p>
+        </header>
+
+        <main>
+            <form action="/research" method="post" class="search-form">
+                <div class="input-group">
+                    <label for="animal">¿Qué animal quieres explorar?</label>
+                    <input type="text" 
+                           id="animal" 
+                           name="animal" 
+                           placeholder="Ejemplo: León, Delfín, Águila..."
+                           required
+                           autocomplete="off">
+                    <button type="submit" class="btn-primary">
+                        🔍 Investigar
+                    </button>
+                </div>
+            </form>
+
+            <div class="examples">
+                <h3>Ejemplos populares:</h3>
+                <div class="example-tags">
+                    <span class="tag" onclick="setAnimal('León')">León</span>
+                    <span class="tag" onclick="setAnimal('Delfín')">Delfín</span>
+                    <span class="tag" onclick="setAnimal('Águila')">Águila</span>
+                    <span class="tag" onclick="setAnimal('Mariposa')">Mariposa</span>
+                    <span class="tag" onclick="setAnimal('Tiburón')">Tiburón</span>
+                    <span class="tag" onclick="setAnimal('Elefante')">Elefante</span>
+                    <span class="tag" onclick="setAnimal('Pingüino')">Pingüino</span>
+                    <span class="tag" onclick="setAnimal('Colibrí')">Colibrí</span>
+                </div>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🤖</div>
+                    <h3>ChatGPT 4o-mini</h3>
+                    <p>Información detallada y precisa sobre cualquier animal</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Google Imagen 3</h3>
+                    <p>Imágenes fotorealistas generadas con IA de última generación</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Resultados Rápidos</h3>
+                    <p>Procesamiento asíncrono para una experiencia fluida</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="main-footer">
+            <p>Desarrollado con amor ❤️ por Bastian para Trini usando las herramientas de OpenAI GPT-4o-mini y Google Vertex AI Imagen 3</p>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

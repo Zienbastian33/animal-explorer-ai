@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados - {{ animal|title }}</title>
+    <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐾 Explorando: {{ animal|title }}</h1>
+            <a href="/" class="btn-secondary">← Volver al inicio</a>
+        </header>
+
+        <main>
+            <div class="progress-section">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p class="progress-text" id="progress-text">Iniciando investigación...</p>
+            </div>
+
+            <div class="results" id="results" style="display: none;">
+                <div class="result-tabs">
+                    <button class="tab-btn active" onclick="showTab('info')">📋 Información</button>
+                    <button class="tab-btn" onclick="showTab('image')">🖼️ Imagen</button>
+                </div>
+
+                <div class="tab-content" id="info-tab">
+                    <div class="info-card">
+                        <h2>Información del Animal</h2>
+                        <div class="animal-info-grid" id="animal-info">
+                            <!-- Info will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="image-tab" style="display: none;">
+                    <div class="image-card">
+                        <h2>Imagen Generada</h2>
+                        <div class="image-container" id="image-container">
+                            <!-- Image will be loaded here -->
+                        </div>
+                        <button class="btn-primary" id="download-btn" style="display: none;" onclick="downloadImage()">
+                            💾 Descargar Imagen
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="error-section" id="error-section" style="display: none;">
+                <div class="error-card">
+                    <h2>⚠️ Errores Encontrados</h2>
+                    <ul id="error-list">
+                        <!-- Errors will be listed here -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn-primary" onclick="window.location.href='/'" id="new-search-btn" style="display: none;">
+                    🔄 Nueva Búsqueda
+                </button>
+            </div>
+        </main>
+
+        <footer class="main-footer">
+            <p>Desarrollado con amor ❤️ por Bastian para Trini usando las herramientas de OpenAI GPT-4o-mini y Google Vertex AI Imagen 3</p>
+        </footer>
+    </div>
+
+    <script>
+        const sessionId = "{{ session_id }}";
+        const animal = "{{ animal }}";
+    </script>
+    <script src="/static/script.js"></script>
+    <script>
+        // Start polling for results
+        pollResults();
+    </script>
+</body>
+</html>
