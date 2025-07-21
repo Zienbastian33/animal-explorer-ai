@@ -1,5 +1,6 @@
-# Vercel entry point
+# Vercel entry point for FastAPI
 from web_app import app
+from mangum import Mangum
 
-# This is required for Vercel deployment
-handler = app
+# Mangum adapter for FastAPI on Vercel
+handler = Mangum(app)
