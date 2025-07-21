@@ -38,16 +38,27 @@ function pollResults() {
     const poll = async () => {
         try {
             const response = await fetch(`/status/${sessionId}`);
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`);
+            }
+            
             const data = await response.json();
+            
+            // Manejar caso especial para recargas
+            if (data.status === 'reload_required') {
+                showError(data.message || 'Se requiere recarga para ver los resultados');
+                document.getElementById('new-search-btn').style.display = 'inline-block';
+                return; // Detener polling
+            }
             
             updateProgress(data);
             
             if (data.status === 'completed' || data.status === 'error') {
                 displayResults(data);
-                return; // Stop polling
+                return; // Detener polling
             }
             
-            // Continue polling
+            // Continuar polling
             setTimeout(poll, 1000);
             
         } catch (error) {

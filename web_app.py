@@ -23,24 +23,52 @@ templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 # Note: No uploads mount needed - using data URLs for images
 
-# Store for session data with TTL (Time To Live)
-sessions = {}
-SESSION_TTL = 3600  # 1 hour in seconds
+# En Vercel, necesitamos una solución más resistente para las sesiones en serverless
+# Usaremos cadenas JSON en cookies para almacenar datos entre solicitudes
+import json
+from fastapi.responses import JSONResponse
+from fastapi import Cookie
+from typing import Optional
 
-def cleanup_expired_sessions():
-    """Remove expired sessions to prevent memory leaks"""
-    current_time = time.time()
-    expired_sessions = [
-        session_id for session_id, data in sessions.items()
-        if current_time - data.get('created_at', 0) > SESSION_TTL
-    ]
-    for session_id in expired_sessions:
-        del sessions[session_id]
+# Constantes para las cookies
+SESSION_COOKIE = "animal_explorer_session"
+SESSION_TTL = 3600  # 1 hora en segundos
+
+# Almacenamiento temporal en memoria (sigue siendo útil para operaciones dentro de una misma función)
+sessions = {}
+
+def set_session_cookie(response: JSONResponse, session_id: str, data: dict):
+    """Establece una cookie con los datos de sesión"""
+    # Crear una versión simplificada para la cookie (solo lo necesario)
+    cookie_data = {
+        "id": session_id,
+        "status": data.get("status", "unknown"),
+        "created_at": data.get("created_at", time.time())
+    }
+    # Si hay imagen o info disponible, marcarlos
+    if data.get("info"):
+        cookie_data["has_info"] = True
+    if data.get("image"):
+        cookie_data["has_image"] = True
+    
+    # Establecer cookie (no incluir la imagen completa para evitar cookies enormes)
+    response.set_cookie(
+        key=SESSION_COOKIE,
+        value=json.dumps(cookie_data),
+        max_age=SESSION_TTL,
+        httponly=True,
+        samesite="lax"
+    )
+    return response
 
 def get_session(session_id: str) -> Dict:
-    """Get session data, cleaning up expired sessions first"""
-    cleanup_expired_sessions()
-    return sessions.get(session_id)
+    """Obtiene datos de sesión de la memoria temporal"""
+    # Si existe en memoria local, usarlo
+    if session_id in sessions:
+        return sessions[session_id]
+    
+    # Sino, crear uno vacío
+    return None
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -53,11 +81,11 @@ async def research_animal(request: Request, animal: str = Form(...)):
     if not animal.strip():
         raise HTTPException(status_code=400, detail="Animal name is required")
     
-    # Generate session ID
+    # Generar ID de sesión
     session_id = str(uuid.uuid4())
     
-    # Initialize session data with timestamp
-    sessions[session_id] = {
+    # Inicializar datos de sesión con timestamp
+    session_data = {
         "animal": animal,
         "status": "processing",
         "info": None,
@@ -66,10 +94,14 @@ async def research_animal(request: Request, animal: str = Form(...)):
         "created_at": time.time()
     }
     
-    # Start background processing
+    # Guardar en memoria local (útil para procesamiento inmediato)
+    sessions[session_id] = session_data
+    
+    # Iniciar procesamiento en background
     asyncio.create_task(process_animal_research(session_id, animal))
     
-    return templates.TemplateResponse(
+    # Crear respuesta con plantilla
+    response = templates.TemplateResponse(
         "result.html", 
         {
             "request": request, 
@@ -77,15 +109,48 @@ async def research_animal(request: Request, animal: str = Form(...)):
             "animal": animal
         }
     )
+    
+    # Establecer cookie inicial (para tracking)
+    response = set_session_cookie(response, session_id, session_data)
+    
+    return response
 
 @app.get("/status/{session_id}")
-async def get_status(session_id: str):
-    """Get processing status"""
+async def get_status(
+    session_id: str,
+    session_cookie: Optional[str] = Cookie(None, alias=SESSION_COOKIE)
+):
+    """Obtener estado del procesamiento"""
+    # Intentar obtener datos de la sesión en memoria
     session_data = get_session(session_id)
-    if not session_data:
-        raise HTTPException(status_code=404, detail="Session not found or expired")
     
-    return JSONResponse(session_data)
+    # Si no se encuentra en memoria, pero existe una cookie, crear respuesta especial
+    if not session_data and session_cookie:
+        try:
+            # Intentar cargar los datos de la cookie
+            cookie_data = json.loads(session_cookie)
+            if cookie_data.get("id") == session_id:
+                # Si la sesión ya estaba completa, devolver un estado especial
+                if cookie_data.get("status") == "completed":
+                    return JSONResponse({
+                        "status": "reload_required",
+                        "message": "Tu sesión está completa pero se ha perdido. Recarga la página."
+                    })
+        except:
+            pass
+    
+    # Si no hay datos de sesión
+    if not session_data:
+        raise HTTPException(status_code=404, detail="Sesión no encontrada o expirada")
+    
+    # Crear respuesta con los datos actuales
+    response = JSONResponse(session_data)
+    
+    # Si la sesión está completa o tiene un error, almacenar en cookie
+    if session_data.get("status") in ["completed", "error"]:
+        response = set_session_cookie(response, session_id, session_data)
+        
+    return response
 
 async def process_animal_research(session_id: str, animal: str):
     """Process animal research in background"""

@@ -1,7 +1,13 @@
-# Vercel entry point for FastAPI
-# Using direct FastAPI app export for Vercel
-from web_app import app
+# Vercel entry point para FastAPI
+# Necesitamos importar directamente todos los módulos necesarios aquí
+import sys
+import os
 
-# Export the app directly for Vercel
-# Vercel will handle the ASGI adapter automatically
-app = app
+# Agregar el directorio principal al path para permitir importaciones
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Importar la app
+from web_app import app as application
+
+# Exportar la app con el nombre que Vercel espera
+app = application
