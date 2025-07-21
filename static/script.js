@@ -145,6 +145,10 @@ function updateProgress(data) {
             progress = 100;
             text = '¡Investigación completada!';
             break;
+        case 'invalid_animal':
+            progress = 100;
+            text = 'Validación completada';
+            break;
         case 'error':
             progress = 100;
             text = 'Error en el procesamiento';

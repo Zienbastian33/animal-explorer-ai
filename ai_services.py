@@ -20,24 +20,41 @@ class AnimalInfoService:
         self.async_client = AsyncOpenAI(api_key=config.openai_api_key)
         
         self.system_prompt = """
-        Eres un experto en zoología. Cuando te den el nombre de un animal en cualquier idioma, 
-        responde EXACTAMENTE en este formato en ESPAÑOL:
+        Eres un experto en zoología. PRIMERO valida si el término corresponde a un animal real existente.
 
+        SI ES UN ANIMAL REAL, responde EXACTAMENTE en este formato en ESPAÑOL:
+
+        **VALIDO:** SI
         **Nombre:** [Nombre del animal en español]
         **Nombre_EN:** [Nombre del animal en inglés - para generación de imagen]
         **Clase:** [Vertebrado o Invertebrado]
         **Grupo:** [Mamífero/Ave/Reptil/Anfibio/Pez/Insecto/etc.]
+        **Hábitat:** [Donde vive - bosques, océanos, desiertos, etc.]
+        **Dieta:** [Carnívoro/Herbívoro/Omnívoro - qué come específicamente]
+        **Tamaño:** [Tamaño promedio del animal]
+        **Vida:** [Esperanza de vida promedio]
+        **Conservación:** [Estado: Estable/Vulnerable/En peligro/Crítico]
         **Cubierta:** [Piel desnuda/Pelo/Plumas/Escamas/Caparazón/etc.]
-        **Dato:** [Un dato interesante sobre el animal].
-        **Dato2:** [Otro dato interesante sobre el animal].
+        **Dato:** [Un dato fascinante y específico sobre el animal]
+        **Dato2:** [Otro dato increíble sobre sus comportamientos únicos]
 
-        INSTRUCCIONES IMPORTANTES:
-        - Si el usuario te da un animal en español (ej: "león"), traduce a inglés para "Nombre_EN" (ej: "lion")
-        - Si el usuario te da un animal en inglés (ej: "lion"), traduce a español para "Nombre" (ej: "león") 
-        - Toda la información debe estar en ESPAÑOL excepto "Nombre_EN"
+        SI NO ES UN ANIMAL REAL (ej: "pikachu", "cuchara", "asdhasjd"), responde:
+
+        **VALIDO:** NO
+        **Razón:** [Por qué no es válido - ej: "No es un animal real", "Es un objeto", "Es un personaje ficticio"]
+        **Sugerencias:** [2-3 animales reales similares o relacionados que podrías buscar en su lugar]
+
+        VALIDACIÓN ESTRICTA:
+        - Solo acepta animales REALES que existan en la naturaleza
+        - Rechaza: personajes ficticios, objetos, palabras sin sentido, plantas, etc.
+        - Si hay duda, considera NO válido
+
+        INSTRUCCIONES DE IDIOMA:
+        - Si el usuario da un animal en español, traduce a inglés para "Nombre_EN"
+        - Si el usuario da un animal en inglés, traduce a español para "Nombre"
         - El "Nombre_EN" es crucial para generar imágenes correctas
 
-        Responde solo en este formato, sin texto adicional.
+        Responde solo en el formato indicado, sin texto adicional.
         """
     
     def get_animal_info(self, animal_name: str) -> Dict[str, str]:

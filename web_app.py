@@ -32,6 +32,41 @@ from fastapi.responses import JSONResponse
 from fastapi import Cookie
 from typing import Optional
 
+def is_valid_animal(animal_info: str) -> tuple[bool, str, list]:
+    """
+    Check if animal is valid based on OpenAI response
+    Returns: (is_valid, reason, suggestions)
+    """
+    try:
+        # Check for validity marker
+        valid_match = re.search(r'\*\*VALIDO:\*\*\s*([^\n\r]+)', animal_info, re.IGNORECASE)
+        
+        if valid_match:
+            validity = valid_match.group(1).strip().upper()
+            
+            if validity == "SI":
+                return True, "", []
+            elif validity == "NO":
+                # Extract reason and suggestions
+                reason_match = re.search(r'\*\*Razón:\*\*\s*([^\n\r]+)', animal_info, re.IGNORECASE)
+                suggestions_match = re.search(r'\*\*Sugerencias:\*\*\s*([^\n\r]+)', animal_info, re.IGNORECASE)
+                
+                reason = reason_match.group(1).strip() if reason_match else "No es un animal válido"
+                suggestions_text = suggestions_match.group(1).strip() if suggestions_match else ""
+                
+                # Parse suggestions (comma separated)
+                suggestions = [s.strip() for s in suggestions_text.split(',') if s.strip()] if suggestions_text else []
+                
+                return False, reason, suggestions
+        
+        # Fallback: if no validity marker found, assume invalid
+        print("[WARNING] No validity marker found in OpenAI response")
+        return False, "Respuesta inesperada del sistema", []
+        
+    except Exception as e:
+        print(f"[ERROR] Error validating animal: {e}")
+        return False, "Error de validación", []
+
 def extract_english_name(animal_info: str) -> str:
     """Extract English animal name from OpenAI response for image generation"""
     try:
@@ -205,6 +240,34 @@ async def process_animal_research_sync(session_id: str, animal: str):
             session_service.update_session(session_id, session_data)
             return
         
+        # Step 1.5: Validate if it's a real animal BEFORE generating expensive image
+        is_valid, invalid_reason, suggestions = is_valid_animal(info_result['content'])
+        
+        if not is_valid:
+            print(f"[VALIDATION] Invalid animal detected: {animal} - {invalid_reason}")
+            
+            # Create user-friendly error message
+            error_message = f"🚫 '{animal}' no es un animal válido"
+            if invalid_reason:
+                error_message += f": {invalid_reason}"
+            
+            if suggestions:
+                suggestions_text = ", ".join(suggestions[:3])  # Limit to 3 suggestions
+                error_message += f"\n\n💡 ¿Quizás buscabas uno de estos?: {suggestions_text}"
+            
+            error_message += "\n\n🔍 Intenta con el nombre de un animal real (ej: león, elefante, águila)"
+            
+            session_data["status"] = "invalid_animal"
+            session_data["errors"] = [error_message]
+            session_data["invalid_reason"] = invalid_reason
+            session_data["suggestions"] = suggestions
+            session_service.update_session(session_id, session_data)
+            
+            print(f"[INFO] Validation complete - animal rejected: {animal}")
+            return  # Stop processing here - no image generation
+        
+        # Animal is valid - proceed with processing
+        print(f"[VALIDATION] Animal validated successfully: {animal}")
         session_data["info"] = info_result['content']
         
         # Extract English name for image generation
@@ -215,11 +278,11 @@ async def process_animal_research_sync(session_id: str, animal: str):
         else:
             print(f"[INFO] Using English name for image: '{english_name}'")
         
-        # Update status: generating image
+        # Update status: generating image (only for valid animals)
         session_data["status"] = "generating_image"
         session_service.update_session(session_id, session_data)
         
-        # Step 2: Generate image with English name
+        # Step 2: Generate image with English name (cost incurred only for valid animals)
         image_result = await image_generation_service.generate_image_async(english_name)
         
         # Obtener datos actualizados nuevamente
@@ -439,6 +502,44 @@ async def test_translation(animal: str):
     except Exception as e:
         return {
             "status": "error",
+            "error": str(e)
+        }
+
+@app.get("/test/validation/{animal}")
+async def test_animal_validation(animal: str):
+    """Test animal validation with enhanced info and validation logic"""
+    try:
+        print(f"[DEBUG] Testing validation for: {animal}")
+        
+        # Get animal info with validation
+        info_result = await animal_info_service.get_animal_info_async(animal)
+        
+        if info_result.get('success'):
+            content = info_result['content']
+            is_valid, reason, suggestions = is_valid_animal(content)
+            english_name = extract_english_name(content) if is_valid else ""
+            
+            return {
+                "status": "success",
+                "original_input": animal,
+                "is_valid_animal": is_valid,
+                "validation_reason": reason if not is_valid else "Animal válido",
+                "suggestions": suggestions,
+                "english_name": english_name,
+                "openai_full_response": content,
+                "would_generate_image": is_valid,
+                "cost_savings": "No image generation cost" if not is_valid else "Image will be generated"
+            }
+        else:
+            return {
+                "status": "error",
+                "error": info_result.get('error'),
+                "details": info_result.get('details')
+            }
+            
+    except Exception as e:
+        return {
+            "status": "error", 
             "error": str(e)
         }
 
