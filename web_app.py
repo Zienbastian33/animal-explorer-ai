@@ -123,4 +123,8 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+<<<<<<< HEAD
     uvicorn.run(app, host="0.0.0.0", port=8000)
+=======
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+>>>>>>> d8c5f21840aaa5dcdf9c7a83abf6e7dbc04b23a5

@@ -1,5 +1,6 @@
 # Animal Explorer AI
 
+<<<<<<< HEAD
 Aplicación completa en Python que permite consultar información de animales usando ChatGPT 4o-mini y generar imágenes usando Google Vertex AI Imagen 3.
 
 ## Características
@@ -80,3 +81,23 @@ animal_ai_app/
 └── uploads/
     └── (imágenes generadas)
 ```
+=======
+Aplicación híbrida que usa OpenAI para información de animales y Google Vertex AI para generar imágenes.
+
+## Arquitectura
+
+- **Frontend + OpenAI API**: Desplegado en Vercel
+- **Generación de Imágenes**: Google Cloud Function con Vertex AI
+
+## Tecnologías
+
+- FastAPI
+- OpenAI GPT-4
+- Google Vertex AI (Imagen 3)
+- Vercel
+- Google Cloud Functions
+
+## Despliegue
+
+Ver `DEPLOYMENT_GUIDE.md` para instrucciones detalladas de despliegue.
+>>>>>>> d8c5f21840aaa5dcdf9c7a83abf6e7dbc04b23a5

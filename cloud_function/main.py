@@ -104,4 +104,8 @@ def generate_animal_image(request):
         elif "QUOTA_EXCEEDED" in error_msg:
             return jsonify({"error": "Quota exceeded", "details": "Check billing and API limits"}), 429, headers
         else:
+<<<<<<< HEAD
             return jsonify({"error": "Image generation failed", "details": error_msg}), 500, headers
+=======
+            return jsonify({"error": "Image generation failed", "details": error_msg}), 500, headers
+>>>>>>> d8c5f21840aaa5dcdf9c7a83abf6e7dbc04b23a5
