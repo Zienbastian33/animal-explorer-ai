@@ -22,31 +22,6 @@
       "handle": "filesystem"
     },
     {
-      "src": "/status/(.*)",
-      "dest": "api/index.py",
-      "methods": ["GET"]
-    },
-    {
-      "src": "/research",
-      "dest": "api/index.py",
-      "methods": ["POST"]
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "api/index.py",
-      "methods": ["GET", "POST"]
-    },
-    {
-      "src": "/health",
-      "dest": "api/index.py",
-      "methods": ["GET"]
-    },
-    {
-      "src": "/",
-      "dest": "api/index.py",
-      "methods": ["GET"]
-    },
-    {
       "src": "/(.*)",
       "dest": "api/index.py"
     }
