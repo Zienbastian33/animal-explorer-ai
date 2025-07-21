@@ -1,6 +1,5 @@
 # Animal Explorer AI
 
-<<<<<<< HEAD
 Aplicación completa en Python que permite consultar información de animales usando ChatGPT 4o-mini y generar imágenes usando Google Vertex AI Imagen 3.
 
 ## Características
@@ -78,26 +77,49 @@ animal_ai_app/
 ├── templates/
 │   ├── index.html
 │   └── result.html
+├── api/
+│   └── index.py          # Punto de entrada para Vercel
+├── verify_routes.py       # Script de verificación de rutas
+├── vercel.json           # Configuración de despliegue
 └── uploads/
     └── (imágenes generadas)
 ```
-=======
-Aplicación híbrida que usa OpenAI para información de animales y Google Vertex AI para generar imágenes.
 
-## Arquitectura
+## Debugging y Verificación
 
-- **Frontend + OpenAI API**: Desplegado en Vercel
-- **Generación de Imágenes**: Google Cloud Function con Vertex AI
+### Verificar Rutas Localmente
 
-## Tecnologías
+Antes de desplegar, puedes verificar que todas las rutas funcionen correctamente:
 
-- FastAPI
-- OpenAI GPT-4
-- Google Vertex AI (Imagen 3)
-- Vercel
-- Google Cloud Functions
+```bash
+# Iniciar el servidor local
+python web_app.py
 
-## Despliegue
+# En otra terminal, ejecutar el script de verificación
+python verify_routes.py
+```
 
-Ver `DEPLOYMENT_GUIDE.md` para instrucciones detalladas de despliegue.
->>>>>>> d8c5f21840aaa5dcdf9c7a83abf6e7dbc04b23a5
+### Debugging en Vercel
+
+Si experimentas errores 404 en producción:
+
+1. **Verificar logs de Vercel:**
+   ```bash
+   vercel logs
+   ```
+
+2. **Verificar variables de entorno:**
+   - `OPENAI_API_KEY`
+   - `IMAGE_GENERATION_FUNCTION_URL`
+
+3. **Rutas críticas a verificar:**
+   - `GET /` - Página principal
+   - `POST /research` - Iniciar investigación
+   - `GET /status/{session_id}` - Polling de estado
+   - `GET /health` - Health check
+
+### Solución de Problemas Comunes
+
+- **Error 404 en `/status/`**: Verificar que `vercel.json` tenga las rutas correctas
+- **Sesiones perdidas**: Normal en serverless, se maneja con cookies
+- **Timeouts**: Verificar que `maxDuration` esté configurado en `vercel.json`

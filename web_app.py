@@ -121,6 +121,10 @@ async def get_status(
     session_cookie: Optional[str] = Cookie(None, alias=SESSION_COOKIE)
 ):
     """Obtener estado del procesamiento"""
+    print(f"[DEBUG] Status request for session_id: {session_id}")
+    print(f"[DEBUG] Available sessions: {list(sessions.keys())}")
+    print(f"[DEBUG] Session cookie: {session_cookie[:50] if session_cookie else 'None'}...")
+    
     # Intentar obtener datos de la sesión en memoria
     session_data = get_session(session_id)
     
