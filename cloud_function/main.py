@@ -71,9 +71,7 @@ def generate_animal_image(request):
         images = model.generate_images(
             prompt=prompt,
             number_of_images=1,
-            language="en",
-            person_generation="dont_allow",
-            add_watermark=False
+            language="en"
         )
         
         if not images:

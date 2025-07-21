@@ -29,6 +29,55 @@ function showTab(tabName) {
     }
 }
 
+function showRateLimitCountdown() {
+    const countdownElement = document.getElementById('rate-limit-countdown');
+    if (!countdownElement) return;
+    
+    // Start with a 60-second countdown (for minute limit)
+    let secondsRemaining = 60;
+    
+    function updateCountdown() {
+        const minutes = Math.floor(secondsRemaining / 60);
+        const seconds = secondsRemaining % 60;
+        
+        if (secondsRemaining > 0) {
+            countdownElement.innerHTML = `⏱️ Podrás intentar de nuevo en: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            secondsRemaining--;
+        } else {
+            countdownElement.innerHTML = '✅ ¡Ya puedes hacer una nueva consulta!';
+            countdownElement.classList.add('expired');
+            
+            // Add button to try again
+            countdownElement.innerHTML += '<br><button class="btn-primary" onclick="window.location.href=\'/\'" style="margin-top: 15px;">🔄 Intentar de Nuevo</button>';
+            clearInterval(countdownTimer);
+        }
+    }
+    
+    // Update countdown every second
+    updateCountdown();
+    const countdownTimer = setInterval(updateCountdown, 1000);
+}
+
+async function checkRateLimits() {
+    try {
+        const response = await fetch('/api/rate-limits');
+        const data = await response.json();
+        
+        if (data.status === 'info' && data.limits) {
+            console.log('Rate limits status:', data.limits);
+            
+            // Show remaining limits in console for debugging
+            const { minute, hour, day } = data.limits;
+            console.log(`Remaining: ${minute.remaining}/min, ${hour.remaining}/hour, ${day.remaining}/day`);
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Error checking rate limits:', error);
+        return null;
+    }
+}
+
 function pollResults() {
     if (typeof sessionId === 'undefined') {
         console.error('Session ID not defined');

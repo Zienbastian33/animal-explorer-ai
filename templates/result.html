@@ -14,12 +14,33 @@
         </header>
 
         <main>
+            {% if rate_limited %}
+            <div class="rate-limit-section">
+                <div class="rate-limit-card">
+                    <h2>🛑 Límite de Consultas Alcanzado</h2>
+                    <p class="rate-limit-message">{{ rate_limit_message }}</p>
+                    <div class="rate-limit-info">
+                        <p><strong>¿Por qué existen límites?</strong></p>
+                        <p>Para controlar costos de generación de imágenes y garantizar un servicio estable para todos los usuarios.</p>
+                        <br>
+                        <p><strong>Límites actuales:</strong></p>
+                        <ul>
+                            <li>⏱️ 1 consulta por minuto</li>
+                            <li>📊 20 consultas por hora</li>
+                            <li>📅 60 consultas por día</li>
+                        </ul>
+                    </div>
+                    <div class="rate-limit-countdown" id="rate-limit-countdown"></div>
+                </div>
+            </div>
+            {% else %}
             <div class="progress-section">
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
                 <p class="progress-text" id="progress-text">Iniciando investigación...</p>
             </div>
+            {% endif %}
 
             <div class="results" id="results" style="display: none;">
                 <div class="result-tabs">
@@ -73,11 +94,17 @@
     <script>
         const sessionId = "{{ session_id }}";
         const animal = "{{ animal }}";
+        const rateLimited = {{ 'true' if rate_limited else 'false' }};
     </script>
     <script src="/static/script.js"></script>
     <script>
-        // Start polling for results
-        pollResults();
+        // Start polling for results only if not rate limited
+        if (!rateLimited) {
+            pollResults();
+        } else {
+            // Show rate limit countdown if applicable
+            showRateLimitCountdown();
+        }
     </script>
 </body>
 </html>

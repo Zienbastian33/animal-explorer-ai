@@ -11,6 +11,7 @@ import time
 from ai_services import animal_info_service, image_generation_service
 from config import config
 from session_service import session_service
+from rate_limiter import rate_limiter
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -37,9 +38,59 @@ async def home(request: Request):
 
 @app.post("/research")
 async def research_animal(request: Request, animal: str = Form(...)):
-    """Research animal endpoint - SERVERLESS COMPATIBLE VERSION"""
+    """Research animal endpoint with rate limiting"""
     if not animal.strip():
         raise HTTPException(status_code=400, detail="Animal name is required")
+    
+    # 🛡️ RATE LIMITING CHECK
+    allowed, limit_info = rate_limiter.check_rate_limit(request)
+    
+    if not allowed:
+        print(f"[RATE_LIMIT] Blocked request: {limit_info}")
+        
+        # Preparar mensaje de error para el usuario
+        error_message = limit_info.get('error', 'Rate limit exceeded')
+        retry_after = limit_info.get('retry_after', 60)
+        limit_type = limit_info.get('limit_type', 'unknown')
+        
+        # Mensaje específico según el tipo de límite
+        if limit_type == "minute":
+            user_message = "⏱️ Debes esperar 1 minuto entre consultas. Por favor, espera antes de intentar nuevamente."
+        elif limit_type == "hour":
+            user_message = f"📊 Has alcanzado el límite de 20 consultas por hora. Inténtalo en {retry_after // 60} minutos."
+        elif limit_type == "day":
+            user_message = f"📅 Has alcanzado el límite de 60 consultas diarias. Inténtalo mañana."
+        elif limit_info.get('status') == 'blacklisted':
+            user_message = "🚫 IP temporalmente bloqueada por exceso de consultas. Inténtalo más tarde."
+        else:
+            user_message = error_message
+        
+        # Crear sesión de error para mostrar el mensaje
+        session_id = str(uuid.uuid4())
+        error_session_data = {
+            "animal": animal,
+            "status": "rate_limited",
+            "info": None,
+            "image": None,
+            "errors": [user_message],
+            "rate_limit_info": limit_info
+        }
+        
+        session_service.create_session(session_id, error_session_data)
+        
+        # Retornar página de resultado con error
+        return templates.TemplateResponse(
+            "result.html",
+            {
+                "request": request,
+                "session_id": session_id,
+                "animal": animal,
+                "rate_limited": True,
+                "rate_limit_message": user_message
+            }
+        )
+    
+    print(f"[RATE_LIMIT] Request allowed: {limit_info}")
     
     # Generar ID de sesión
     session_id = str(uuid.uuid4())
@@ -50,22 +101,14 @@ async def research_animal(request: Request, animal: str = Form(...)):
         "status": "processing",
         "info": None,
         "image": None,
-        "errors": []
+        "errors": [],
+        "rate_limit_info": limit_info  # Información para debugging
     }
     
     # Crear sesión persistente
     success = session_service.create_session(session_id, session_data)
     if not success:
         raise HTTPException(status_code=500, detail="Error al crear sesión")
-    
-    # ❌ OLD: Background task (doesn't work in serverless)
-    # asyncio.create_task(process_animal_research(session_id, animal))
-    
-    # ✅ NEW: Process immediately and return loading page
-    # The frontend will poll /status/{session_id} to get results
-    
-    # Start processing in a separate endpoint call pattern
-    # For now, return the loading page and let frontend poll
     
     # Crear respuesta con plantilla
     response = templates.TemplateResponse(
@@ -320,6 +363,18 @@ async def test_image_generation():
             "message": "Image test failed",
             "error": str(e)
         }
+
+@app.get("/api/rate-limits")
+async def get_rate_limits(request: Request):
+    """Obtener estado actual de rate limits para el usuario"""
+    try:
+        status = rate_limiter.get_rate_limit_status(request)
+        return JSONResponse(status)
+    except Exception as e:
+        return JSONResponse({
+            "error": "Failed to get rate limit status",
+            "details": str(e)
+        }, status_code=500)
 
 if __name__ == "__main__":
     import uvicorn
