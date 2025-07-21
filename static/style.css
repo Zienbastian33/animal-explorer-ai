@@ -1,8 +1,35 @@
-/* Modern CSS for Animal Explorer */
+/* Modern CSS for Animal Explorer - Enhanced UX */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+/* Smooth scrolling and improved animations */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Loading animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes progressFlow {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 body {
@@ -45,6 +72,13 @@ main {
     padding: 40px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     margin-bottom: 20px;
+    animation: fadeInUp 0.8s ease-out;
+    transition: all 0.3s ease;
+}
+
+main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.25);
 }
 
 /* Rate Limiting Styles */

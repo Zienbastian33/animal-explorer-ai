@@ -1,125 +1,106 @@
 # Animal Explorer AI
 
-Aplicación completa en Python que permite consultar información de animales usando ChatGPT 4o-mini y generar imágenes usando Google Vertex AI Imagen 3.
+Aplicación web inteligente que proporciona información detallada de animales y genera imágenes fotorealistas usando IA.
 
-## Características
+## ✨ Características Principales
 
-- 🤖 **ChatGPT 4o-mini**: Información detallada de animales
-- 🎨 **Google Imagen 3**: Generación de imágenes fotorealistas
-- 🖥️ **Interfaz Desktop**: Aplicación tkinter moderna
-- 🌐 **Aplicación Web**: FastAPI con interfaz responsive
-- ⚡ **Procesamiento Asíncrono**: Experiencia fluida del usuario
-- 🔒 **Manejo de Errores**: Gestión robusta de errores y autenticación
+- 🤖 **OpenAI GPT-4o-mini**: Información detallada y validación de animales reales
+- 🎨 **Google Vertex AI Imagen 3**: Generación de imágenes fotorealistas
+- 🌍 **Soporte Bilingüe**: Manejo automático español/inglés
+- 🛡️ **Rate Limiting**: Control de costos y prevención de abuso
+- 🔍 **Validación Inteligente**: Rechaza términos inválidos antes de generar imágenes
+- ⚡ **Arquitectura Serverless**: Desplegado en Vercel con Redis persistence
 
-## Instalación
+## 🚀 Información de Animales
 
-### 1. Clonar repositorio
-```bash
-git clone <repository-url>
-cd animal-ai-app
-```
+La aplicación proporciona:
+- **Clasificación**: Clase, grupo, cubierta corporal
+- **Ecología**: Hábitat natural y dieta específica
+- **Biometría**: Tamaño promedio y esperanza de vida
+- **Conservación**: Estado actual de conservación
+- **Datos Fascinantes**: Comportamientos únicos y características especiales
 
-### 2. Crear entorno virtual
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# o
-venv\Scripts\activate  # Windows
-```
+## 🛠️ Desarrollo Local
 
-### 3. Instalar dependencias
-```bash
-pip install -r requirements.txt
-```
+### Prerrequisitos
+- Python 3.9+
+- Cuenta OpenAI con API key
+- Google Cloud Project con Vertex AI habilitado
+- Redis instance (Upstash recomendado)
 
-### 4. Configurar variables de entorno
-
-Crea un archivo `.env` a partir de `.env.example` y añade tus credenciales:
-
-```
-OPENAI_API_KEY="tu_clave_de_openai"
-GOOGLE_APPLICATION_CREDENTIALS="ruta/a/tus/credenciales.json"
-GOOGLE_CLOUD_PROJECT_ID="tu_id_de_proyecto_gcp"
-```
-
-## Uso
-
-### Aplicación de Escritorio
-
-```bash
-python tkinter_app.py
-```
-
-### Aplicación Web
-
-```bash
-python web_app.py
-# o con uvicorn para desarrollo
-uvicorn web_app:app --reload
-```
-
-Luego, abre tu navegador en `http://127.0.0.1:8000`.
-
-## Estructura del Proyecto
-
-```
-animal_ai_app/
-├── .env.example
-├── README.md
-├── ai_services.py
-├── config.py
-├── requirements.txt
-├── tkinter_app.py
-├── web_app.py
-├── static/
-│   ├── script.js
-│   └── style.css
-├── templates/
-│   ├── index.html
-│   └── result.html
-├── api/
-│   └── index.py          # Punto de entrada para Vercel
-├── verify_routes.py       # Script de verificación de rutas
-├── vercel.json           # Configuración de despliegue
-└── uploads/
-    └── (imágenes generadas)
-```
-
-## Debugging y Verificación
-
-### Verificar Rutas Localmente
-
-Antes de desplegar, puedes verificar que todas las rutas funcionen correctamente:
-
-```bash
-# Iniciar el servidor local
-python web_app.py
-
-# En otra terminal, ejecutar el script de verificación
-python verify_routes.py
-```
-
-### Debugging en Vercel
-
-Si experimentas errores 404 en producción:
-
-1. **Verificar logs de Vercel:**
+### Configuración
+1. **Clonar repositorio**
    ```bash
-   vercel logs
+   git clone <repository-url>
+   cd animal-explorer-ai
    ```
 
-2. **Verificar variables de entorno:**
-   - `OPENAI_API_KEY`
-   - `IMAGE_GENERATION_FUNCTION_URL`
+2. **Instalar dependencias**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-3. **Rutas críticas a verificar:**
-   - `GET /` - Página principal
-   - `POST /research` - Iniciar investigación
-   - `GET /status/{session_id}` - Polling de estado
-   - `GET /health` - Health check
+3. **Variables de entorno** (Vercel Dashboard)
+   - `OPENAI_API_KEY`: Tu clave de OpenAI
+   - `IMAGE_GENERATION_FUNCTION_URL`: URL de Google Cloud Function
+   - `REDIS_URL`: URL de conexión Redis
 
-### Solución de Problemas Comunes
+4. **Ejecutar localmente**
+   ```bash
+   python web_app.py
+   ```
 
-- **Error 404 en `/status/`**: Verificar que `vercel.json` tenga las rutas correctas
-- **Sesiones perdidas**: Normal en serverless, se maneja con cookies
-- **Timeouts**: Verificar que `maxDuration` esté configurado en `vercel.json`
+## 🌐 Despliegue en Producción
+
+La aplicación está configurada para Vercel:
+
+1. **Google Cloud Function** (generar imágenes)
+   ```bash
+   cd cloud_function
+   ./deploy.sh
+   ```
+
+2. **Vercel Deployment**
+   ```bash
+   vercel --prod
+   ```
+
+## 🧪 Endpoints de Prueba
+
+- `/test/config` - Verificar configuración
+- `/test/openai` - Probar conexión OpenAI
+- `/test/validation/{animal}` - Probar validación de animales
+- `/api/rate-limits` - Estado de límites del usuario
+
+## 📁 Estructura del Proyecto
+
+```
+animal-explorer-ai/
+├── web_app.py              # Aplicación FastAPI principal
+├── ai_services.py          # Servicios OpenAI y validación
+├── rate_limiter.py         # Sistema de límites por IP
+├── session_service.py      # Persistencia Redis
+├── static/                 # Frontend (JS, CSS)
+├── templates/              # HTML templates
+├── cloud_function/         # Google Cloud Function para imágenes
+├── api/index.py           # Entry point Vercel
+└── vercel.json            # Configuración deployment
+```
+
+## 🔧 Características Técnicas
+
+- **Rate Limiting**: 1 min entre consultas, 20/hora, 60/día
+- **Validación de Costos**: Previene generación de imágenes para términos inválidos
+- **Sesiones Persistentes**: Redis con TTL automático
+- **Soporte Bilingüe**: Traducción automática para precisión de imágenes
+- **Arquitectura Serverless**: Compatible con Vercel Functions
+
+Para documentación técnica detallada, consultar `CLAUDE.md` y `past_context.md`.
+
+## 💡 Desarrollado con
+
+- FastAPI + Jinja2
+- OpenAI GPT-4o-mini API
+- Google Cloud Vertex AI
+- Redis para persistencia
+- Vercel para deployment
