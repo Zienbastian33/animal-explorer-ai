@@ -3,17 +3,29 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
     }
   ],
   "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "api/index.py"
     }
   ],
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60
+    }
+  },
   "env": {
-    "OPENAI_API_KEY": "$OPENAI_API_KEY",
-    "IMAGE_GENERATION_FUNCTION_URL": "$IMAGE_GENERATION_FUNCTION_URL"
+    "OPENAI_API_KEY": "@openai_api_key",
+    "IMAGE_GENERATION_FUNCTION_URL": "@image_generation_function_url"
   }
 }

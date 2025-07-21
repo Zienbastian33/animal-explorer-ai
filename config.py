@@ -31,8 +31,7 @@ class Config:
         if not self.image_generation_function_url:
             raise ValueError("IMAGE_GENERATION_FUNCTION_URL environment variable is required")
 
-        # Create upload directory if it doesn't exist
-        os.makedirs(self.upload_dir, exist_ok=True)
+        # Note: No need to create upload directory - using data URLs for images
 
 # Global config instance, ready to be imported by other modules
 config = Config()

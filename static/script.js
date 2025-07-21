@@ -162,18 +162,16 @@ function displayResults(data) {
 
 function downloadImage() {
     const downloadBtn = document.getElementById('download-btn');
-    if (!downloadBtn) return;
+    const imageDataUrl = downloadBtn.getAttribute('data-image-url');
     
-    const imageUrl = downloadBtn.getAttribute('data-image-url');
-    if (!imageUrl) return;
-    
-    // Create download link
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = `${animal}_generated.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (imageDataUrl) {
+        const link = document.createElement('a');
+        link.href = imageDataUrl;
+        link.download = `${animal}_generated_image.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 }
 
 function showError(message) {

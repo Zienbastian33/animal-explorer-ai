@@ -130,20 +130,17 @@ class ImageGenerationService:
             if not result.get('success'):
                 return result
             
-            # Save base64 image locally
+            # Return image as base64 data URL directly (no local storage)
             image_base64 = result['image_base64']
             filename = result['filename']
             
-            # Decode and save image
-            image_data = base64.b64decode(image_base64)
-            filepath = os.path.join(config.upload_dir, filename)
-            
-            with open(filepath, 'wb') as f:
-                f.write(image_data)
+            # Create data URL for direct display
+            data_url = f"data:image/png;base64,{image_base64}"
             
             return {
                 "success": True,
-                "image_path": filepath,
+                "image_data_url": data_url,
+                "image_base64": image_base64,
                 "filename": filename,
                 "prompt": result.get('prompt', '')
             }
@@ -179,20 +176,17 @@ class ImageGenerationService:
                 if not result.get('success'):
                     return result
                 
-                # Save base64 image locally
+                # Return image as base64 data URL directly (no local storage)
                 image_base64 = result['image_base64']
                 filename = result['filename']
                 
-                # Decode and save image
-                image_data = base64.b64decode(image_base64)
-                filepath = os.path.join(config.upload_dir, filename)
-                
-                with open(filepath, 'wb') as f:
-                    f.write(image_data)
+                # Create data URL for direct display
+                data_url = f"data:image/png;base64,{image_base64}"
                 
                 return {
                     "success": True,
-                    "image_path": filepath,
+                    "image_data_url": data_url,
+                    "image_base64": image_base64,
                     "filename": filename,
                     "prompt": result.get('prompt', '')
                 }
