@@ -20,16 +20,22 @@ class AnimalInfoService:
         self.async_client = AsyncOpenAI(api_key=config.openai_api_key)
         
         self.system_prompt = """
-        Eres un experto en zoología. Cuando te den el nombre de un animal, 
-        responde EXACTAMENTE en este formato:
+        Eres un experto en zoología. Cuando te den el nombre de un animal en cualquier idioma, 
+        responde EXACTAMENTE en este formato en ESPAÑOL:
 
-        **Nombre:** [Nombre del animal]
+        **Nombre:** [Nombre del animal en español]
+        **Nombre_EN:** [Nombre del animal en inglés - para generación de imagen]
         **Clase:** [Vertebrado o Invertebrado]
         **Grupo:** [Mamífero/Ave/Reptil/Anfibio/Pez/Insecto/etc.]
         **Cubierta:** [Piel desnuda/Pelo/Plumas/Escamas/Caparazón/etc.]
         **Dato:** [Un dato interesante sobre el animal].
         **Dato2:** [Otro dato interesante sobre el animal].
 
+        INSTRUCCIONES IMPORTANTES:
+        - Si el usuario te da un animal en español (ej: "león"), traduce a inglés para "Nombre_EN" (ej: "lion")
+        - Si el usuario te da un animal en inglés (ej: "lion"), traduce a español para "Nombre" (ej: "león") 
+        - Toda la información debe estar en ESPAÑOL excepto "Nombre_EN"
+        - El "Nombre_EN" es crucial para generar imágenes correctas
 
         Responde solo en este formato, sin texto adicional.
         """

@@ -12,6 +12,7 @@ from ai_services import animal_info_service, image_generation_service
 from config import config
 from session_service import session_service
 from rate_limiter import rate_limiter
+import re
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -30,6 +31,29 @@ import json
 from fastapi.responses import JSONResponse
 from fastapi import Cookie
 from typing import Optional
+
+def extract_english_name(animal_info: str) -> str:
+    """Extract English animal name from OpenAI response for image generation"""
+    try:
+        # Look for the "Nombre_EN:" field in the response
+        match = re.search(r'\*\*Nombre_EN:\*\*\s*([^\n\r]+)', animal_info, re.IGNORECASE)
+        
+        if match:
+            english_name = match.group(1).strip()
+            # Clean up any markdown or extra formatting
+            english_name = re.sub(r'[\*\[\]_]', '', english_name)
+            english_name = english_name.strip()
+            
+            print(f"[DEBUG] Extracted English name: '{english_name}'")
+            return english_name
+        else:
+            print(f"[WARNING] Could not find 'Nombre_EN:' in response")
+            print(f"[DEBUG] Response content: {animal_info[:200]}...")
+            return ""
+            
+    except Exception as e:
+        print(f"[ERROR] Error extracting English name: {e}")
+        return ""
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -183,12 +207,20 @@ async def process_animal_research_sync(session_id: str, animal: str):
         
         session_data["info"] = info_result['content']
         
+        # Extract English name for image generation
+        english_name = extract_english_name(info_result['content'])
+        if not english_name:
+            print(f"[WARNING] Could not extract English name, using original: {animal}")
+            english_name = animal
+        else:
+            print(f"[INFO] Using English name for image: '{english_name}'")
+        
         # Update status: generating image
         session_data["status"] = "generating_image"
         session_service.update_session(session_id, session_data)
         
-        # Step 2: Generate image
-        image_result = await image_generation_service.generate_image_async(animal)
+        # Step 2: Generate image with English name
+        image_result = await image_generation_service.generate_image_async(english_name)
         
         # Obtener datos actualizados nuevamente
         session_data = session_service.get_session(session_id)
@@ -375,6 +407,40 @@ async def get_rate_limits(request: Request):
             "error": "Failed to get rate limit status",
             "details": str(e)
         }, status_code=500)
+
+@app.get("/test/translation/{animal}")
+async def test_translation(animal: str):
+    """Test bilingual animal translation and English name extraction"""
+    try:
+        print(f"[DEBUG] Testing translation for: {animal}")
+        
+        # Get animal info with new bilingual prompt
+        info_result = await animal_info_service.get_animal_info_async(animal)
+        
+        if info_result.get('success'):
+            content = info_result['content']
+            english_name = extract_english_name(content)
+            
+            return {
+                "status": "success",
+                "original_input": animal,
+                "openai_response": content,
+                "extracted_english_name": english_name,
+                "extraction_successful": bool(english_name),
+                "recommended_for_image": english_name if english_name else animal
+            }
+        else:
+            return {
+                "status": "error",
+                "error": info_result.get('error'),
+                "details": info_result.get('details')
+            }
+            
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
 
 if __name__ == "__main__":
     import uvicorn
