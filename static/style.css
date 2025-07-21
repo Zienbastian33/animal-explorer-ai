@@ -375,6 +375,40 @@ main {
     box-shadow: 0 5px 20px rgba(0,0,0,0.2);
 }
 
+/* Suggestions styles */
+.suggestions-container {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.suggestions-container h4 {
+    color: #007bff;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.btn-suggestion {
+    display: inline-block;
+    margin: 5px;
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.btn-suggestion:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
 /* Error styles */
 .error-section {
     margin-top: 30px;

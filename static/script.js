@@ -102,7 +102,7 @@ function pollResults() {
             
             updateProgress(data);
             
-            if (data.status === 'completed' || data.status === 'error') {
+            if (data.status === 'completed' || data.status === 'error' || data.status === 'invalid_animal') {
                 displayResults(data);
                 return; // Detener polling
             }
@@ -216,9 +216,30 @@ function displayResults(data) {
             errorList.innerHTML = '';
             data.errors.forEach(error => {
                 const li = document.createElement('li');
-                li.textContent = error;
+                li.innerHTML = error.replace(/\n/g, '<br>'); // Allow line breaks in error messages
                 errorList.appendChild(li);
             });
+            
+            // Add suggestions as clickable buttons if available
+            if (data.suggestions && data.suggestions.length > 0) {
+                const suggestionsDiv = document.createElement('div');
+                suggestionsDiv.className = 'suggestions-container';
+                suggestionsDiv.innerHTML = '<h4>💡 Sugerencias:</h4>';
+                
+                data.suggestions.forEach(suggestion => {
+                    const suggestionBtn = document.createElement('button');
+                    suggestionBtn.className = 'btn-suggestion';
+                    suggestionBtn.textContent = suggestion;
+                    suggestionBtn.onclick = () => {
+                        // Redirect to home with pre-filled suggestion
+                        window.location.href = `/?animal=${encodeURIComponent(suggestion)}`;
+                    };
+                    suggestionsDiv.appendChild(suggestionBtn);
+                });
+                
+                errorList.appendChild(suggestionsDiv);
+            }
+            
             errorSection.style.display = 'block';
         }
     }
@@ -287,5 +308,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.focus();
             }
         });
+    }
+    
+    // Pre-fill input if animal parameter is provided in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const animalParam = urlParams.get('animal');
+    if (animalParam) {
+        const input = document.getElementById('animal');
+        if (input) {
+            input.value = animalParam;
+            input.focus();
+        }
     }
 });
