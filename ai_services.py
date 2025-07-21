@@ -175,8 +175,13 @@ class ImageGenerationService:
     async def generate_image_async(self, animal_name: str) -> Dict[str, any]:
         """Generate image asynchronously via Cloud Function"""
         try:
+            print(f"[DEBUG] Making image generation request for: {animal_name}")
+            print(f"[DEBUG] Cloud Function URL: {self.cloud_function_url}")
+            print(f"[DEBUG] URL is set: {bool(self.cloud_function_url)}")
+            
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 payload = {"animal": animal_name}
+                print(f"[DEBUG] Payload: {payload}")
                 
                 response = await client.post(
                     self.cloud_function_url,
@@ -184,16 +189,25 @@ class ImageGenerationService:
                     headers={"Content-Type": "application/json"}
                 )
                 
+                print(f"[DEBUG] Response status: {response.status_code}")
+                print(f"[DEBUG] Response headers: {dict(response.headers)}")
+                
                 if response.status_code != 200:
+                    error_text = response.text
+                    print(f"[ERROR] Cloud Function failed: {response.status_code}")
+                    print(f"[ERROR] Response body: {error_text}")
                     return {
                         "success": False,
                         "error": f"Cloud Function error: {response.status_code}",
-                        "details": response.text
+                        "details": error_text,
+                        "url_used": self.cloud_function_url
                     }
                 
                 result = response.json()
+                print(f"[DEBUG] Cloud Function response: {result}")
                 
                 if not result.get('success'):
+                    print(f"[ERROR] Cloud Function returned error: {result}")
                     return result
                 
                 # Return image as base64 data URL directly (no local storage)
@@ -211,11 +225,14 @@ class ImageGenerationService:
                     "prompt": result.get('prompt', '')
                 }
                 
-        except httpx.TimeoutException:
+        except httpx.TimeoutException as e:
+            print(f"[ERROR] Image generation timeout: {str(e)}")
             return {"success": False, "error": "Request timeout", "details": "Cloud Function took too long to respond"}
-        except httpx.ConnectError:
-            return {"success": False, "error": "Connection error", "details": "Could not connect to Cloud Function"}
+        except httpx.ConnectError as e:
+            print(f"[ERROR] Image generation connection error: {str(e)}")
+            return {"success": False, "error": "Connection error", "details": f"Could not connect to Cloud Function: {str(e)}"}
         except Exception as e:
+            print(f"[ERROR] Unexpected image generation error: {str(e)}")
             return {"success": False, "error": "Unexpected error", "details": str(e)}
 
 

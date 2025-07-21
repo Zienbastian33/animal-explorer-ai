@@ -290,6 +290,37 @@ async def test_simple_openai():
             "error_type": str(type(e))
         }
 
+@app.get("/test/image")
+async def test_image_generation():
+    """Test image generation service directly"""
+    try:
+        print("[DEBUG] Testing image generation...")
+        result = await image_generation_service.generate_image_async("león")
+        print(f"[DEBUG] Image test result: {result.get('success')}")
+        
+        if result.get('success'):
+            return {
+                "status": "success",
+                "message": "Image generation is working",
+                "filename": result.get('filename'),
+                "has_image": bool(result.get('image_data_url'))
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Image generation failed",
+                "error": result.get('error'),
+                "details": result.get('details'),
+                "url_used": result.get('url_used')
+            }
+    except Exception as e:
+        print(f"[ERROR] Image test failed: {str(e)}")
+        return {
+            "status": "error",
+            "message": "Image test failed",
+            "error": str(e)
+        }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
