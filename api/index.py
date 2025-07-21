@@ -24,15 +24,15 @@ try:
         if hasattr(route, 'path'):
             print(f"Route: {route.path} - Methods: {getattr(route, 'methods', 'N/A')}")
             
-except Exception as e:
-    print(f"Error importing FastAPI app: {e}")
+except Exception as import_error:
+    print(f"Error importing FastAPI app: {import_error}")
     # Crear una app básica de fallback
     from fastapi import FastAPI
     fastapi_app = FastAPI()
     
     @fastapi_app.get("/")
     async def fallback_root():
-        return {"error": "Failed to import main app", "details": str(e)}
+        return {"error": "Failed to import main app", "details": str(import_error)}
 
 # Para Vercel, necesitamos exportar la app con el nombre correcto
 # Vercel espera que la variable se llame exactamente 'app'

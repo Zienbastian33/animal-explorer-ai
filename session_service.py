@@ -20,8 +20,12 @@ class SessionService:
         # Intentar conectar a Redis
         if self.redis_url:
             try:
+                # Normalizar la URL de Redis
+                normalized_url = self._normalize_redis_url(self.redis_url)
+                print(f"[DEBUG] Connecting to Redis: {normalized_url[:20]}...")
+                
                 self.redis_client = redis.from_url(
-                    self.redis_url,
+                    normalized_url,
                     decode_responses=True,
                     socket_timeout=5,
                     socket_connect_timeout=5,
@@ -34,8 +38,38 @@ class SessionService:
                 print(f"[WARNING] Redis connection failed: {e}")
                 print("[INFO] Falling back to in-memory sessions")
                 self.redis_client = None
+            except Exception as e:
+                print(f"[ERROR] Redis setup error: {e}")
+                print("[INFO] Falling back to in-memory sessions")
+                self.redis_client = None
         else:
             print("[INFO] No REDIS_URL found, using in-memory sessions")
+    
+    def _normalize_redis_url(self, url: str) -> str:
+        """Normalizar URL de Redis para diferentes proveedores"""
+        # Si ya tiene el esquema correcto, devolverlo tal como está
+        if url.startswith(('redis://', 'rediss://', 'unix://')):
+            return url
+        
+        # Si es una URL HTTP/HTTPS (como Upstash REST), convertir a Redis
+        if url.startswith(('http://', 'https://')):
+            # Para Upstash, necesitamos usar la URL de Redis, no la REST
+            print("[WARNING] HTTP URL detected. Para Upstash, usa la 'Redis URL', no la 'REST URL'")
+            # Intentar convertir URL HTTP a Redis
+            if 'upstash.io' in url:
+                # Formato típico de Upstash: https://xxx.upstash.io
+                # Necesitamos la Redis URL que es: redis://default:password@xxx.upstash.io:6379
+                print("[ERROR] Upstash REST URL detected. Necesitas la 'Redis URL' de Upstash, no la 'REST URL'")
+                raise ValueError("URL de Redis inválida. Usa la 'Redis URL' de Upstash, no la 'REST URL'")
+            else:
+                # Asumir que es una URL HTTP que necesita ser convertida
+                return url.replace('http://', 'redis://').replace('https://', 'rediss://')
+        
+        # Si no tiene esquema, asumir redis://
+        if '://' not in url:
+            return f'redis://{url}'
+        
+        return url
     
     def _get_key(self, session_id: str) -> str:
         """Generar clave Redis para la sesión"""

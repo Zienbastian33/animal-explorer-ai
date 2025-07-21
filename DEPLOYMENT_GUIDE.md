@@ -62,15 +62,17 @@ vercel env add REDIS_URL
 # Pegar: redis://default:password@host:port
 ```
 
-### Opción 2: Upstash Redis (Alternativa serverless)
+### Opción 2: Upstash Redis (Recomendado para serverless)
 1. Crear cuenta en [Upstash](https://upstash.com/)
-2. Crear base de datos Redis
-3. Copiar la URL de conexión
-4. Configurar en Vercel:
-```bash
-vercel env add REDIS_URL
-# Pegar: redis://default:password@host:port
-```
+2. Clic en "Create Database"
+3. Seleccionar región más cercana
+4. **IMPORTANTE**: Copiar la **"Redis URL"** (NO la "REST URL")
+   - ✅ Correcto: `redis://default:password@host:6379`
+   - ❌ Incorrecto: `https://host.upstash.io` (REST URL)
+5. Configurar en Vercel Dashboard:
+   - Settings → Environment Variables → Add New
+   - Name: `REDIS_URL`
+   - Value: [La Redis URL copiada]
 
 ### Opción 3: Sin Redis (Solo desarrollo)
 - La aplicación funciona sin Redis usando fallback en memoria
