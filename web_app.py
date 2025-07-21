@@ -54,14 +54,37 @@ def is_valid_animal(animal_info: str) -> Tuple[bool, str, list]:
                 reason = reason_match.group(1).strip() if reason_match else "No es un animal válido"
                 suggestions_text = suggestions_match.group(1).strip() if suggestions_match else ""
                 
-                # Parse suggestions - clean up brackets and split by comma
+                # Parse suggestions - extract animal names from the response
+                suggestions = []
                 if suggestions_text:
-                    # Remove brackets if present
-                    suggestions_text = suggestions_text.strip('[]')
+                    # Remove everything before and including brackets/dashes
+                    clean_text = suggestions_text.split(' - ')[0] if ' - ' in suggestions_text else suggestions_text
+                    clean_text = clean_text.strip('[]')
+                    
                     # Split by comma and clean each suggestion
-                    suggestions = [s.strip().strip('[]"\'') for s in suggestions_text.split(',') if s.strip()]
-                else:
-                    suggestions = []
+                    raw_suggestions = clean_text.split(',')
+                    
+                    for suggestion in raw_suggestions:
+                        # Clean up each suggestion extensively
+                        clean_suggestion = suggestion.strip().strip('[]"\'')
+                        
+                        # Remove common unwanted phrases
+                        unwanted_phrases = [
+                            'como el ', 'como la ', 'el ', 'la ', 'un ', 'una ',
+                            'Busca información sobre animales reales como el ',
+                            'Busca información sobre el ', 'Busca información sobre ',
+                            'información sobre ', 'animales reales como ',
+                        ]
+                        
+                        for phrase in unwanted_phrases:
+                            clean_suggestion = clean_suggestion.replace(phrase, '')
+                        
+                        # Remove quotes and extra whitespace
+                        clean_suggestion = clean_suggestion.replace('"', '').replace("'", "").strip()
+                        
+                        # Only keep if it's a reasonable animal name
+                        if clean_suggestion and len(clean_suggestion.strip()) > 1 and not any(x in clean_suggestion.lower() for x in ['busca', 'información', 'sobre']):
+                            suggestions.append(clean_suggestion.strip())
                 
                 return False, reason, suggestions
         
@@ -268,10 +291,16 @@ async def process_animal_research_sync(session_id: str, animal: str):
             return
         
         # Step 1.5: Validate if it's a real animal BEFORE generating expensive image
+        print(f"[DEBUG] Starting validation for: {animal}")
+        print(f"[DEBUG] OpenAI response length: {len(info_result['content'])}")
+        print(f"[DEBUG] OpenAI response preview: {info_result['content'][:200]}...")
+        
         is_valid, invalid_reason, suggestions = is_valid_animal(info_result['content'])
+        print(f"[DEBUG] Validation result: valid={is_valid}, reason='{invalid_reason}', suggestions={suggestions}")
         
         if not is_valid:
             print(f"[VALIDATION] Invalid animal detected: {animal} - {invalid_reason}")
+            print(f"[VALIDATION] Suggestions: {suggestions}")
             
             # Create user-friendly error message
             error_message = f"🚫 '{animal}' no es un animal válido"
@@ -288,7 +317,17 @@ async def process_animal_research_sync(session_id: str, animal: str):
             session_data["errors"] = [error_message]
             session_data["invalid_reason"] = invalid_reason
             session_data["suggestions"] = suggestions
-            session_service.update_session(session_id, session_data)
+            
+            print(f"[DEBUG] Updating session with invalid_animal status")
+            update_success = session_service.update_session(session_id, session_data)
+            print(f"[DEBUG] Session update success: {update_success}")
+            
+            # Verify the session was updated
+            updated_session = session_service.get_session(session_id)
+            if updated_session:
+                print(f"[DEBUG] Updated session status: {updated_session.get('status')}")
+            else:
+                print(f"[ERROR] Failed to retrieve updated session!")
             
             print(f"[INFO] Validation complete - animal rejected: {animal}")
             return  # Stop processing here - no image generation

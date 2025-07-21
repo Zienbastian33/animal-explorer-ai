@@ -42,7 +42,7 @@ class AnimalInfoService:
 
         **VALIDO:** NO
         **Razón:** [Por qué no es válido - ej: "No es un animal real", "Es un objeto", "Es un personaje ficticio"]
-        **Sugerencias:** [2-3 animales reales similares o relacionados que podrías buscar en su lugar]
+        **Sugerencias:** [Animal1, Animal2, Animal3] - Solo nombres de animales separados por comas, sin explicaciones adicionales
 
         VALIDACIÓN ESTRICTA:
         - Solo acepta animales REALES que existan en la naturaleza
