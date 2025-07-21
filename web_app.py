@@ -37,7 +37,7 @@ async def home(request: Request):
 
 @app.post("/research")
 async def research_animal(request: Request, animal: str = Form(...)):
-    """Research animal endpoint"""
+    """Research animal endpoint - SERVERLESS COMPATIBLE VERSION"""
     if not animal.strip():
         raise HTTPException(status_code=400, detail="Animal name is required")
     
@@ -58,8 +58,14 @@ async def research_animal(request: Request, animal: str = Form(...)):
     if not success:
         raise HTTPException(status_code=500, detail="Error al crear sesión")
     
-    # Iniciar procesamiento en background
-    asyncio.create_task(process_animal_research(session_id, animal))
+    # ❌ OLD: Background task (doesn't work in serverless)
+    # asyncio.create_task(process_animal_research(session_id, animal))
+    
+    # ✅ NEW: Process immediately and return loading page
+    # The frontend will poll /status/{session_id} to get results
+    
+    # Start processing in a separate endpoint call pattern
+    # For now, return the loading page and let frontend poll
     
     # Crear respuesta con plantilla
     response = templates.TemplateResponse(
@@ -75,7 +81,7 @@ async def research_animal(request: Request, animal: str = Form(...)):
 
 @app.get("/status/{session_id}")
 async def get_status(session_id: str):
-    """Obtener estado del procesamiento"""
+    """Obtener estado del procesamiento - SERVERLESS COMPATIBLE VERSION"""
     print(f"[DEBUG] Status request for session_id: {session_id}")
     
     # Obtener datos de la sesión persistente
@@ -88,6 +94,16 @@ async def get_status(session_id: str):
     
     print(f"[DEBUG] Session {session_id} status: {session_data.get('status')}")
     
+    # ✅ NEW SERVERLESS PATTERN: Process when first status call is made
+    if session_data.get("status") == "processing":
+        print(f"[INFO] Starting processing for session {session_id}")
+        # Process the animal research synchronously
+        await process_animal_research_sync(session_id, session_data["animal"])
+        # Get updated session data
+        session_data = session_service.get_session(session_id)
+        if not session_data:
+            raise HTTPException(status_code=500, detail="Processing failed")
+    
     # Extender TTL de la sesión si está activa
     if session_data.get("status") not in ["completed", "error"]:
         session_service.extend_session(session_id)
@@ -95,8 +111,8 @@ async def get_status(session_id: str):
     # Crear respuesta con los datos actuales
     return JSONResponse(session_data)
 
-async def process_animal_research(session_id: str, animal: str):
-    """Process animal research in background"""
+async def process_animal_research_sync(session_id: str, animal: str):
+    """Process animal research synchronously for serverless compatibility"""
     try:
         # Obtener datos actuales de la sesión
         session_data = session_service.get_session(session_id)
@@ -179,6 +195,45 @@ async def api_generate_image(animal: str):
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "message": "Animal Explorer API is running"}
+
+@app.get("/test/openai")
+async def test_openai():
+    """Test OpenAI API connectivity"""
+    try:
+        print("[DEBUG] Testing OpenAI API connection...")
+        result = await animal_info_service.get_animal_info_async("león")
+        print(f"[DEBUG] OpenAI test result: {result.get('success')}")
+        
+        if result.get('success'):
+            return {
+                "status": "success",
+                "message": "OpenAI API is working",
+                "sample_response": result.get('content', '')[:100] + "..."
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "OpenAI API failed",
+                "error": result.get('error'),
+                "details": result.get('details')
+            }
+    except Exception as e:
+        print(f"[ERROR] OpenAI test failed: {str(e)}")
+        return {
+            "status": "error",
+            "message": "OpenAI test failed",
+            "error": str(e)
+        }
+
+@app.get("/test/config")
+async def test_config():
+    """Test configuration and environment variables"""
+    return {
+        "openai_key_set": bool(config.openai_api_key),
+        "openai_key_length": len(config.openai_api_key) if config.openai_api_key else 0,
+        "image_function_url_set": bool(config.image_generation_function_url),
+        "openai_model": config.openai_model
+    }
 
 if __name__ == "__main__":
     import uvicorn
