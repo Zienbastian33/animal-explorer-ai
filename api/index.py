@@ -14,13 +14,13 @@ os.environ.setdefault('PYTHONPATH', str(root_dir))
 
 try:
     # Importar la aplicación FastAPI
-    from web_app import app
+    from web_app import app as fastapi_app
     
     # Verificar que la app se importó correctamente
-    print(f"FastAPI app imported successfully. Routes: {len(app.routes)}")
+    print(f"FastAPI app imported successfully. Routes: {len(fastapi_app.routes)}")
     
     # Listar rutas disponibles para debugging
-    for route in app.routes:
+    for route in fastapi_app.routes:
         if hasattr(route, 'path'):
             print(f"Route: {route.path} - Methods: {getattr(route, 'methods', 'N/A')}")
             
@@ -28,12 +28,12 @@ except Exception as e:
     print(f"Error importing FastAPI app: {e}")
     # Crear una app básica de fallback
     from fastapi import FastAPI
-    app = FastAPI()
+    fastapi_app = FastAPI()
     
-    @app.get("/")
+    @fastapi_app.get("/")
     async def fallback_root():
         return {"error": "Failed to import main app", "details": str(e)}
 
-# Exportar la app para Vercel
-# Vercel espera que la variable se llame 'app'
-handler = app
+# Para Vercel, necesitamos exportar la app con el nombre correcto
+# Vercel espera que la variable se llame exactamente 'app'
+app = fastapi_app
