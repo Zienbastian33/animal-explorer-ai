@@ -228,11 +228,28 @@ async def test_openai():
 @app.get("/test/config")
 async def test_config():
     """Test configuration and environment variables"""
+    import os
+    
+    # Get raw environment variables
+    raw_openai_key = os.getenv("OPENAI_API_KEY")
+    raw_image_url = os.getenv("IMAGE_GENERATION_FUNCTION_URL")
+    raw_redis_url = os.getenv("REDIS_URL")
+    
     return {
-        "openai_key_set": bool(config.openai_api_key),
-        "openai_key_length": len(config.openai_api_key) if config.openai_api_key else 0,
-        "image_function_url_set": bool(config.image_generation_function_url),
-        "openai_model": config.openai_model
+        "raw_env_vars": {
+            "OPENAI_API_KEY_set": bool(raw_openai_key),
+            "OPENAI_API_KEY_length": len(raw_openai_key) if raw_openai_key else 0,
+            "OPENAI_API_KEY_preview": f"{raw_openai_key[:4]}...{raw_openai_key[-4:]}" if raw_openai_key and len(raw_openai_key) > 8 else "INVALID_OR_MISSING",
+            "IMAGE_GENERATION_FUNCTION_URL_set": bool(raw_image_url),
+            "REDIS_URL_set": bool(raw_redis_url)
+        },
+        "config_vars": {
+            "openai_key_set": bool(config.openai_api_key),
+            "openai_key_length": len(config.openai_api_key) if config.openai_api_key else 0,
+            "image_function_url_set": bool(config.image_generation_function_url),
+            "openai_model": config.openai_model
+        },
+        "environment": os.getenv("VERCEL_ENV", "development")
     }
 
 if __name__ == "__main__":
