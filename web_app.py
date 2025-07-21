@@ -252,6 +252,44 @@ async def test_config():
         "environment": os.getenv("VERCEL_ENV", "development")
     }
 
+@app.get("/test/simple-openai")
+async def test_simple_openai():
+    """Simple OpenAI test without services wrapper"""
+    import os
+    from openai import AsyncOpenAI
+    
+    try:
+        # Get API key directly
+        api_key = os.getenv("OPENAI_API_KEY")
+        
+        if not api_key:
+            return {"error": "No API key found in environment"}
+        
+        # Create client directly
+        client = AsyncOpenAI(api_key=api_key)
+        
+        # Make simple request
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": "Say hello"}
+            ],
+            max_tokens=10
+        )
+        
+        return {
+            "success": True,
+            "response": response.choices[0].message.content,
+            "model": response.model
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": str(type(e))
+        }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

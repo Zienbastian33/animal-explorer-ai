@@ -71,6 +71,11 @@ class AnimalInfoService:
     async def get_animal_info_async(self, animal_name: str) -> Dict[str, str]:
         """Get animal information asynchronously"""
         try:
+            print(f"[DEBUG] Making OpenAI request for animal: {animal_name}")
+            print(f"[DEBUG] Using model: {config.openai_model}")
+            print(f"[DEBUG] API key present: {bool(config.openai_api_key)}")
+            print(f"[DEBUG] API key length: {len(config.openai_api_key) if config.openai_api_key else 0}")
+            
             response = await self.async_client.chat.completions.create(
                 model=config.openai_model,
                 messages=[
@@ -82,6 +87,7 @@ class AnimalInfoService:
             )
             
             content = response.choices[0].message.content
+            print(f"[DEBUG] OpenAI response successful, content length: {len(content)}")
             
             return {
                 "success": True,
@@ -93,8 +99,22 @@ class AnimalInfoService:
                 }
             }
             
+        except openai.RateLimitError as e:
+            print(f"[ERROR] OpenAI Rate Limit: {str(e)}")
+            return {"success": False, "error": "Rate Limit Error", "details": str(e)}
+        except openai.AuthenticationError as e:
+            print(f"[ERROR] OpenAI Auth Error: {str(e)}")
+            return {"success": False, "error": "Authentication Error - Check API Key", "details": str(e)}
+        except openai.APIConnectionError as e:
+            print(f"[ERROR] OpenAI Connection Error: {str(e)}")
+            return {"success": False, "error": "Connection Error", "details": str(e)}
+        except openai.BadRequestError as e:
+            print(f"[ERROR] OpenAI Bad Request: {str(e)}")
+            return {"success": False, "error": "Bad Request Error", "details": str(e)}
         except Exception as e:
-            return {"success": False, "error": "API Error", "details": str(e)}
+            print(f"[ERROR] Unexpected OpenAI Error: {str(e)}")
+            print(f"[ERROR] Error type: {type(e)}")
+            return {"success": False, "error": "Unexpected API Error", "details": str(e)}
 
 
 class ImageGenerationService:
