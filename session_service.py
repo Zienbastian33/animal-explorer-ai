@@ -22,14 +22,17 @@ class SessionService:
             try:
                 # Normalizar la URL de Redis
                 normalized_url = self._normalize_redis_url(self.redis_url)
-                print(f"[DEBUG] Connecting to Redis: {normalized_url[:20]}...")
+                print(f"[DEBUG] Connecting to Redis: {normalized_url[:40]}...")
                 
+                # Forzar conexión SSL para compatibilidad con Upstash/Vercel
                 self.redis_client = redis.from_url(
                     normalized_url,
                     decode_responses=True,
                     socket_timeout=5,
                     socket_connect_timeout=5,
-                    retry_on_timeout=True
+                    retry_on_timeout=True,
+                    ssl=True,  # Forzar SSL
+                    ssl_cert_reqs=None # Deshabilitar requerimientos de certificado SSL
                 )
                 # Test connection
                 self.redis_client.ping()
