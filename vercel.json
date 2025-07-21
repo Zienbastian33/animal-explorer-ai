@@ -55,10 +55,5 @@
     "OPENAI_API_KEY": "@openai_api_key",
     "IMAGE_GENERATION_FUNCTION_URL": "@image_generation_function_url",
     "PYTHONPATH": "."
-  },
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 60
-    }
   }
 }
