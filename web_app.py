@@ -30,9 +30,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 import json
 from fastapi.responses import JSONResponse
 from fastapi import Cookie
-from typing import Optional
+from typing import Optional, Tuple
 
-def is_valid_animal(animal_info: str) -> tuple[bool, str, list]:
+def is_valid_animal(animal_info: str) -> Tuple[bool, str, list]:
     """
     Check if animal is valid based on OpenAI response
     Returns: (is_valid, reason, suggestions)
@@ -54,8 +54,14 @@ def is_valid_animal(animal_info: str) -> tuple[bool, str, list]:
                 reason = reason_match.group(1).strip() if reason_match else "No es un animal válido"
                 suggestions_text = suggestions_match.group(1).strip() if suggestions_match else ""
                 
-                # Parse suggestions (comma separated)
-                suggestions = [s.strip() for s in suggestions_text.split(',') if s.strip()] if suggestions_text else []
+                # Parse suggestions - clean up brackets and split by comma
+                if suggestions_text:
+                    # Remove brackets if present
+                    suggestions_text = suggestions_text.strip('[]')
+                    # Split by comma and clean each suggestion
+                    suggestions = [s.strip().strip('[]"\'') for s in suggestions_text.split(',') if s.strip()]
+                else:
+                    suggestions = []
                 
                 return False, reason, suggestions
         
@@ -186,8 +192,18 @@ async def get_status(session_id: str):
     """Obtener estado del procesamiento - SERVERLESS COMPATIBLE VERSION"""
     print(f"[DEBUG] Status request for session_id: {session_id}")
     
-    # Obtener datos de la sesión persistente
-    session_data = session_service.get_session(session_id)
+    try:
+        # Obtener datos de la sesión persistente
+        session_data = session_service.get_session(session_id)
+        print(f"[DEBUG] Session data retrieved: {session_data is not None}")
+        
+        if session_data:
+            print(f"[DEBUG] Session status: {session_data.get('status')}")
+        else:
+            print(f"[DEBUG] No session data found for {session_id}")
+    except Exception as e:
+        print(f"[ERROR] Error getting session data: {e}")
+        return JSONResponse({"error": "Session retrieval error", "details": str(e)}, status_code=500)
     
     # Si no hay datos de sesión
     if not session_data:
@@ -199,12 +215,23 @@ async def get_status(session_id: str):
     # ✅ NEW SERVERLESS PATTERN: Process when first status call is made
     if session_data.get("status") == "processing":
         print(f"[INFO] Starting processing for session {session_id}")
-        # Process the animal research synchronously
-        await process_animal_research_sync(session_id, session_data["animal"])
+        try:
+            # Process the animal research synchronously
+            await process_animal_research_sync(session_id, session_data["animal"])
+            print(f"[INFO] Processing completed for session {session_id}")
+        except Exception as e:
+            print(f"[ERROR] Processing failed for session {session_id}: {e}")
+            # Update session with error
+            session_data["status"] = "error"
+            session_data["errors"] = [f"Processing error: {str(e)}"]
+            session_service.update_session(session_id, session_data)
+            return JSONResponse(session_data)
+        
         # Get updated session data
         session_data = session_service.get_session(session_id)
         if not session_data:
-            raise HTTPException(status_code=500, detail="Processing failed")
+            print(f"[ERROR] Session data lost after processing for {session_id}")
+            raise HTTPException(status_code=500, detail="Processing failed - session lost")
     
     # Extender TTL de la sesión si está activa
     if session_data.get("status") not in ["completed", "error"]:
