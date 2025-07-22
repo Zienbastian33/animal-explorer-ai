@@ -334,15 +334,20 @@ function handleFormSubmit(form) {
         return false;
     }
     
-    // Add loading state to button
+    // Add loading state to button immediately
     if (submitBtn) {
         submitBtn.classList.add('loading');
         submitBtn.disabled = true;
     }
     
-    // Add loading class to input
+    // Add loading class to input but DON'T disable it yet
+    // We'll disable it after form submission starts
     input.classList.add('loading');
-    input.disabled = true;
+    
+    // Disable input after a small delay to ensure form data is sent
+    setTimeout(() => {
+        input.disabled = true;
+    }, 10);
     
     return true;
 }
