@@ -247,6 +247,7 @@ main:hover {
     gap: 15px;
     max-width: 600px;
     margin: 0 auto;
+    text-align: center;
 }
 
 .input-group label {
@@ -254,6 +255,7 @@ main:hover {
     font-weight: 600;
     color: #555;
     transition: color 0.2s ease;
+    text-align: center;
 }
 
 .input-group input {
@@ -1022,21 +1024,22 @@ main:hover {
     text-align: center;
 }
 
-.btn-shuffle {
-    background: linear-gradient(135deg, #ff6b6b, #feca57);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
+.tag-shuffle {
+    background: linear-gradient(145deg, #ff6b6b, #feca57) !important;
+    color: white !important;
+    border-color: #ff6b6b !important;
+    font-weight: 600;
     box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
 }
 
-.btn-shuffle:hover {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+.tag-shuffle:hover {
+    background: linear-gradient(135deg, #ff5252, #ffb300) !important;
+    transform: translateY(-8px) scale(1.1);
+    box-shadow: 0 20px 40px rgba(255, 107, 107, 0.4);
+}
+
+.tag-shuffle .tag-emoji {
+    color: white;
 }
 
 /* Feature badges */

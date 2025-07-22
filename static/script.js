@@ -397,11 +397,12 @@ function shuffleTags() {
     ];
     
     const tags = document.querySelectorAll('.tag');
-    const shuffleBtn = document.querySelector('.btn-shuffle');
+    const shuffleBtn = document.querySelector('.tag-shuffle');
     
     // Disable button during animation
     if (shuffleBtn) {
-        shuffleBtn.disabled = true;
+        shuffleBtn.style.pointerEvents = 'none';
+        shuffleBtn.style.opacity = '0.6';
         shuffleBtn.style.transform = 'scale(0.95)';
     }
     
@@ -428,7 +429,8 @@ function shuffleTags() {
     // Re-enable shuffle button
     setTimeout(() => {
         if (shuffleBtn) {
-            shuffleBtn.disabled = false;
+            shuffleBtn.style.pointerEvents = '';
+            shuffleBtn.style.opacity = '';
             shuffleBtn.style.transform = '';
         }
     }, tags.length * 100 + 400);

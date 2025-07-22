@@ -31,20 +31,6 @@
         <header>
             <h1>🐾 Explorador de Animales con IA</h1>
             <p>Descubre información fascinante y genera imágenes de cualquier animal usando IA avanzada</p>
-            <div class="header-stats">
-                <div class="stat-item">
-                    <span class="stat-number" data-target="1000">0</span>
-                    <span class="stat-label">Animales Explorados</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" data-target="50">0</span>
-                    <span class="stat-label">Especies Únicas</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" data-target="99">0</span>
-                    <span class="stat-label">% Precisión</span>
-                </div>
-            </div>
         </header>
 
         <main>
@@ -107,9 +93,10 @@
                     </span>
                 </div>
                 <div class="shuffle-tags">
-                    <button type="button" class="btn-shuffle" onclick="shuffleTags()">
-                        🎲 Sorpréndeme
-                    </button>
+                    <span class="tag tag-shuffle" onclick="shuffleTags()">
+                        <span class="tag-emoji">🎲</span>
+                        <span class="tag-text">Sorpréndeme</span>
+                    </span>
                 </div>
             </div>
 
