@@ -111,6 +111,7 @@ env.bak/
 venv.bak/
 CLAUDE.md
 past_context.md
+explicacion.md
 
 # Spyder project settings
 .spyderproject

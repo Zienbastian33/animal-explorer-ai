@@ -71,6 +71,9 @@ La aplicación está configurada para Vercel:
 - `/test/openai` - Probar conexión OpenAI
 - `/test/validation/{animal}` - Probar validación de animales
 - `/api/rate-limits` - Estado de límites del usuario
+- `/api/cache/stats` - Estadísticas del sistema de caché
+- `/api/popular-animals` - Animales más buscados
+- `/api/cache/upstash-stats` - Métricas de eficiencia Redis
 
 ## 📁 Estructura del Proyecto
 
@@ -78,10 +81,11 @@ La aplicación está configurada para Vercel:
 animal-explorer-ai/
 ├── web_app.py              # Aplicación FastAPI principal
 ├── ai_services.py          # Servicios OpenAI y validación
+├── cache_service.py        # Sistema de caché inteligente Redis
 ├── rate_limiter.py         # Sistema de límites por IP
 ├── session_service.py      # Persistencia Redis
-├── static/                 # Frontend (JS, CSS)
-├── templates/              # HTML templates
+├── static/                 # Frontend moderno (JS, CSS con animaciones)
+├── templates/              # HTML templates responsive
 ├── cloud_function/         # Google Cloud Function para imágenes
 ├── api/index.py           # Entry point Vercel
 └── vercel.json            # Configuración deployment
@@ -89,13 +93,16 @@ animal-explorer-ai/
 
 ## 🔧 Características Técnicas
 
-- **Rate Limiting**: 1 min entre consultas, 20/hora, 60/día
-- **Validación de Costos**: Previene generación de imágenes para términos inválidos
-- **Sesiones Persistentes**: Redis con TTL automático
-- **Soporte Bilingüe**: Traducción automática para precisión de imágenes
-- **Arquitectura Serverless**: Compatible con Vercel Functions
+- **🚀 Caché Inteligente**: Sistema Redis optimizado que acelera búsquedas repetidas
+- **📊 Analytics en Tiempo Real**: Tracking de animales populares y tendencias
+- **🛡️ Rate Limiting**: 1 min entre consultas, 20/hora, 60/día
+- **💰 Validación de Costos**: Previene generación de imágenes para términos inválidos
+- **🎨 UI/UX Moderna**: Animaciones fluidas, glassmorphism, responsive design
+- **🔄 Sesiones Persistentes**: Redis con TTL automático
+- **🌍 Soporte Bilingüe**: Traducción automática para precisión de imágenes
+- **⚡ Arquitectura Serverless**: Compatible con Vercel Functions
 
-Para documentación técnica detallada, consultar `CLAUDE.md` y `past_context.md`.
+
 
 ## 💡 Desarrollado con
 
