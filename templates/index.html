@@ -3,71 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animal Explorer AI</title>
+    <title>🐾 Animal Explorer AI - Descubre el Reino Animal</title>
+    <meta name="description" content="Explora el fascinante mundo animal con IA. Información detallada e imágenes fotorealistas de cualquier animal generadas con ChatGPT e Imagen 3.">
+    <meta name="keywords" content="animales, IA, inteligencia artificial, ChatGPT, Vertex AI, explorador animales, fauna">
+    <meta name="author" content="Bastian para Trini">
+    
+    <!-- Open Graph meta tags -->
+    <meta property="og:title" content="🐾 Animal Explorer AI">
+    <meta property="og:description" content="Descubre información fascinante y genera imágenes de cualquier animal usando IA avanzada">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/static/img/favicon.png">
+    
+    <!-- Twitter meta tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🐾 Animal Explorer AI">
+    <meta name="twitter:description" content="Explora el reino animal con IA - Información detallada e imágenes fotorealistas">
+    
     <link rel="icon" type="image/png" href="/static/img/favicon.png">
     <link href="/static/style.css" rel="stylesheet">
+    
+    <!-- Preload key resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🐾 Explorador de Animales con IA</h1>
             <p>Descubre información fascinante y genera imágenes de cualquier animal usando IA avanzada</p>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-number" data-target="1000">0</span>
+                    <span class="stat-label">Animales Explorados</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" data-target="50">0</span>
+                    <span class="stat-label">Especies Únicas</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" data-target="99">0</span>
+                    <span class="stat-label">% Precisión</span>
+                </div>
+            </div>
         </header>
 
         <main>
             <form action="/research" method="post" class="search-form">
                 <div class="input-group">
                     <label for="animal">¿Qué animal quieres explorar?</label>
-                    <input type="text" 
-                           id="animal" 
-                           name="animal" 
-                           placeholder="Ejemplo: León, Delfín, Águila..."
-                           required
-                           autocomplete="off">
-                    <button type="submit" class="btn-primary">
-                        🔍 Investigar
+                    <div class="input-container">
+                        <input type="text" 
+                               id="animal" 
+                               name="animal" 
+                               placeholder="Ejemplo: León, Delfín, Águila..."
+                               required
+                               autocomplete="off">
+                        <div class="input-highlight"></div>
+                        <div class="search-suggestions" id="searchSuggestions"></div>
+                    </div>
+                    <button type="submit" class="btn-primary" id="submitBtn">
+                        <span class="btn-text">🔍 Investigar</span>
+                        <div class="btn-loader">
+                            <div class="loader-spinner"></div>
+                        </div>
                     </button>
                 </div>
             </form>
 
             <div class="examples">
                 <h3>Ejemplos populares:</h3>
-                <div class="example-tags">
-                    <span class="tag" onclick="setAnimal('León')">León</span>
-                    <span class="tag" onclick="setAnimal('Delfín')">Delfín</span>
-                    <span class="tag" onclick="setAnimal('Águila')">Águila</span>
-                    <span class="tag" onclick="setAnimal('Mariposa')">Mariposa</span>
-                    <span class="tag" onclick="setAnimal('Tiburón')">Tiburón</span>
-                    <span class="tag" onclick="setAnimal('Elefante')">Elefante</span>
-                    <span class="tag" onclick="setAnimal('Pingüino')">Pingüino</span>
-                    <span class="tag" onclick="setAnimal('Colibrí')">Colibrí</span>
+                <div class="example-tags" id="exampleTags">
+                    <span class="tag" onclick="setAnimal('León')" data-emoji="🦁">
+                        <span class="tag-emoji">🦁</span>
+                        <span class="tag-text">León</span>
+                    </span>
+                    <span class="tag" onclick="setAnimal('Delfín')" data-emoji="🐬">
+                        <span class="tag-emoji">🐬</span>
+                        <span class="tag-text">Delfín</span>
+                    </span>
+                    <span class="tag" onclick="setAnimal('Águila')" data-emoji="🦅">
+                        <span class="tag-emoji">🦅</span>
+                        <span class="tag-text">Águila</span>
+                    </span>
+                    <span class="tag" onclick="setAnimal('Mariposa')" data-emoji="🦋">
+                        <span class="tag-emoji">🦋</span>
+                        <span class="tag-text">Mariposa</span>
+                    </span>
+                    <span class="tag" onclick="setAnimal('Tiburón')" data-emoji="🦈">
+                        <span class="tag-emoji">🦈</span>
+                        <span class="tag-text">Tiburón</span>
+                    </span>
+                    <span class="tag" onclick="setAnimal('Elefante')" data-emoji="🐘">
+                        <span class="tag-emoji">🐘</span>
+                        <span class="tag-text">Elefante</span>
+                    </span>
+                    <span class="tag" onclick="setAnimal('Pingüino')" data-emoji="🐧">
+                        <span class="tag-emoji">🐧</span>
+                        <span class="tag-text">Pingüino</span>
+                    </span>
+                    <span class="tag" onclick="setAnimal('Colibrí')" data-emoji="🐦">
+                        <span class="tag-emoji">🐦</span>
+                        <span class="tag-text">Colibrí</span>
+                    </span>
+                </div>
+                <div class="shuffle-tags">
+                    <button type="button" class="btn-shuffle" onclick="shuffleTags()">
+                        🎲 Sorpréndeme
+                    </button>
                 </div>
             </div>
 
             <div class="features">
-                <div class="feature">
+                <div class="feature" data-feature="ai">
                     <div class="feature-icon">🤖</div>
                     <h3>ChatGPT 4o-mini</h3>
-                    <p>Información detallada y precisa sobre cualquier animal</p>
+                    <p>Información detallada y precisa sobre cualquier animal del planeta</p>
+                    <div class="feature-badge">IA Avanzada</div>
                 </div>
-                <div class="feature">
+                <div class="feature" data-feature="images">
                     <div class="feature-icon">🎨</div>
                     <h3>Google Imagen 3</h3>
                     <p>Imágenes fotorealistas generadas con IA de última generación</p>
+                    <div class="feature-badge">Calidad 4K</div>
                 </div>
-                <div class="feature">
+                <div class="feature" data-feature="speed">
                     <div class="feature-icon">⚡</div>
                     <h3>Resultados Rápidos</h3>
                     <p>Procesamiento asíncrono para una experiencia fluida</p>
+                    <div class="feature-badge">Tiempo Real</div>
+                </div>
+            </div>
+            
+            <!-- New section: Recent popular animals -->
+            <div class="popular-section">
+                <h3>🏆 Más Explorados Recientemente</h3>
+                <div class="popular-grid" id="popularAnimals">
+                    <!-- Will be populated by JavaScript -->
                 </div>
             </div>
         </main>
 
         <footer class="main-footer">
-            <p>Desarrollado con amor ❤️ por Bastian para Trini usando las herramientas de OpenAI GPT-4o-mini y Google Vertex AI Imagen 3</p>
+            <div class="footer-content">
+                <div class="footer-main">
+                    <p>Desarrollado con amor ❤️ por Bastian para Trini</p>
+                    <div class="tech-stack">
+                        <span class="tech-badge">OpenAI GPT-4o-mini</span>
+                        <span class="tech-badge">Google Vertex AI</span>
+                        <span class="tech-badge">FastAPI</span>
+                        <span class="tech-badge">Redis</span>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <a href="/api/rate-limits" class="footer-link">📊 Mi Uso</a>
+                    <a href="/test/config" class="footer-link">⚙️ Estado</a>
+                </div>
+            </div>
         </footer>
     </div>
 
     <script src="/static/script.js"></script>
+    
+    <!-- Enhanced JavaScript for new features -->
+    <script>
+        // Counter animation for header stats
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-number');
+            
+            counters.forEach(counter => {
+                const target = parseInt(counter.getAttribute('data-target'));
+                let current = 0;
+                const increment = target / 50;
+                
+                const updateCounter = () => {
+                    if (current < target) {
+                        counter.textContent = Math.ceil(current);
+                        current += increment;
+                        setTimeout(updateCounter, 40);
+                    } else {
+                        counter.textContent = target;
+                    }
+                };
+                
+                updateCounter();
+            });
+        }
+        
+        // Shuffle tags animation
+        function shuffleTags() {
+            const allAnimals = [
+                {name: 'Jaguar', emoji: '🐆'},
+                {name: 'Koala', emoji: '🐨'},
+                {name: 'Medusa', emoji: '🕾'},
+                {name: 'Pulpo', emoji: '🐙'},
+                {name: 'Gecko', emoji: '🦎'},
+                {name: 'Flamingo', emoji: '🦩'},
+                {name: 'Nutria', emoji: '🦦'},
+                {name: 'Loro', emoji: '🦜'}
+            ];
+            
+            const tags = document.querySelectorAll('.tag');
+            
+            tags.forEach((tag, index) => {
+                setTimeout(() => {
+                    const randomAnimal = allAnimals[Math.floor(Math.random() * allAnimals.length)];
+                    const emoji = tag.querySelector('.tag-emoji');
+                    const text = tag.querySelector('.tag-text');
+                    
+                    tag.style.transform = 'rotateY(90deg)';
+                    
+                    setTimeout(() => {
+                        emoji.textContent = randomAnimal.emoji;
+                        text.textContent = randomAnimal.name;
+                        tag.onclick = () => setAnimal(randomAnimal.name);
+                        tag.style.transform = 'rotateY(0deg)';
+                    }, 200);
+                }, index * 100);
+            });
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate counters after a short delay
+            setTimeout(animateCounters, 1000);
+            
+            // Add stagger animation to tags
+            const tags = document.querySelectorAll('.tag');
+            tags.forEach((tag, index) => {
+                tag.style.animationDelay = `${index * 0.1}s`;
+            });
+            
+            // Enhanced input interactions
+            const input = document.getElementById('animal');
+            const suggestions = document.getElementById('searchSuggestions');
+            
+            input.addEventListener('input', function() {
+                const value = this.value.toLowerCase();
+                if (value.length > 2) {
+                    // Could add live search suggestions here
+                    suggestions.innerHTML = '';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

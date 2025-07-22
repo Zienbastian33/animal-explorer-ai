@@ -3,8 +3,31 @@
 function setAnimal(animal) {
     const input = document.getElementById('animal');
     if (input) {
-        input.value = animal;
+        // Add typing animation effect
+        input.value = '';
         input.focus();
+        
+        let i = 0;
+        const typeWriter = () => {
+            if (i < animal.length) {
+                input.value += animal.charAt(i);
+                i++;
+                setTimeout(typeWriter, 50);
+            }
+        };
+        
+        typeWriter();
+        
+        // Add visual feedback to the clicked tag
+        const tags = document.querySelectorAll('.tag');
+        tags.forEach(tag => {
+            if (tag.textContent.includes(animal)) {
+                tag.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    tag.style.transform = '';
+                }, 200);
+            }
+        });
     }
 }
 
@@ -297,18 +320,212 @@ function renderAnimalInfo(container, text) {
     }
 }
 
+// Enhanced form submission with loading animation
+function handleFormSubmit(form) {
+    const submitBtn = document.getElementById('submitBtn');
+    const input = document.getElementById('animal');
+    
+    if (!input.value.trim()) {
+        // Enhanced error notification
+        showNotification('Por favor ingresa el nombre de un animal.', 'warning');
+        input.focus();
+        input.classList.add('shake');
+        setTimeout(() => input.classList.remove('shake'), 500);
+        return false;
+    }
+    
+    // Add loading state to button
+    if (submitBtn) {
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+    }
+    
+    // Add loading class to input
+    input.classList.add('loading');
+    input.disabled = true;
+    
+    return true;
+}
+
+// Enhanced notification system
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(n => n.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-icon">${getNotificationIcon(type)}</span>
+            <span class="notification-message">${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Add entrance animation
+    setTimeout(() => notification.classList.add('show'), 100);
+    
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        info: 'ℹ️',
+        success: '✅',
+        warning: '⚠️',
+        error: '❌'
+    };
+    return icons[type] || icons.info;
+}
+
+// Shuffle tags with enhanced animation
+function shuffleTags() {
+    const allAnimals = [
+        {name: 'Jaguar', emoji: '🐆'}, {name: 'Koala', emoji: '🐨'}, 
+        {name: 'Medusa', emoji: '🔴'}, {name: 'Pulpo', emoji: '🐙'},
+        {name: 'Gecko', emoji: '🦎'}, {name: 'Flamingo', emoji: '🦩'},
+        {name: 'Nutria', emoji: '🦦'}, {name: 'Loro', emoji: '🦜'},
+        {name: 'Panda', emoji: '🐼'}, {name: 'Rana', emoji: '🐸'},
+        {name: 'Ballena', emoji: '🐋'}, {name: 'Búho', emoji: '🦉'},
+        {name: 'Canguro', emoji: '🦘'}, {name: 'Zebra', emoji: '🦓'}
+    ];
+    
+    const tags = document.querySelectorAll('.tag');
+    const shuffleBtn = document.querySelector('.btn-shuffle');
+    
+    // Disable button during animation
+    if (shuffleBtn) {
+        shuffleBtn.disabled = true;
+        shuffleBtn.style.transform = 'scale(0.95)';
+    }
+    
+    tags.forEach((tag, index) => {
+        setTimeout(() => {
+            const randomAnimal = allAnimals[Math.floor(Math.random() * allAnimals.length)];
+            const emoji = tag.querySelector('.tag-emoji');
+            const text = tag.querySelector('.tag-text');
+            
+            // Flip animation
+            tag.style.transform = 'rotateY(90deg) scale(0.8)';
+            
+            setTimeout(() => {
+                if (emoji) emoji.textContent = randomAnimal.emoji;
+                if (text) text.textContent = randomAnimal.name;
+                tag.onclick = () => setAnimal(randomAnimal.name);
+                
+                // Flip back
+                tag.style.transform = 'rotateY(0deg) scale(1)';
+            }, 200);
+        }, index * 100);
+    });
+    
+    // Re-enable shuffle button
+    setTimeout(() => {
+        if (shuffleBtn) {
+            shuffleBtn.disabled = false;
+            shuffleBtn.style.transform = '';
+        }
+    }, tags.length * 100 + 400);
+}
+
+// Enhanced search with suggestions
+function initEnhancedSearch() {
+    const input = document.getElementById('animal');
+    const suggestions = document.getElementById('searchSuggestions');
+    
+    if (!input || !suggestions) return;
+    
+    const commonAnimals = [
+        'León', 'Tigre', 'Elefante', 'Jirafa', 'Cebra', 'Hipopótamo',
+        'Rinoceronte', 'Cocodrilo', 'Serpiente', 'Águila', 'Halcón',
+        'Búho', 'Loro', 'Pingüino', 'Delfín', 'Ballena', 'Tiburón',
+        'Pulpo', 'Medusa', 'Rana', 'Salamandra', 'Iguana', 'Gecko'
+    ];
+    
+    input.addEventListener('input', function() {
+        const value = this.value.toLowerCase();
+        
+        if (value.length < 2) {
+            suggestions.style.display = 'none';
+            return;
+        }
+        
+        const matches = commonAnimals.filter(animal => 
+            animal.toLowerCase().includes(value)
+        ).slice(0, 5);
+        
+        if (matches.length === 0) {
+            suggestions.style.display = 'none';
+            return;
+        }
+        
+        suggestions.innerHTML = matches.map(animal => 
+            `<div class="suggestion-item" onclick="selectSuggestion('${animal}')">${animal}</div>`
+        ).join('');
+        
+        suggestions.style.display = 'block';
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+            suggestions.style.display = 'none';
+        }
+    });
+}
+
+function selectSuggestion(animal) {
+    const input = document.getElementById('animal');
+    const suggestions = document.getElementById('searchSuggestions');
+    
+    if (input) {
+        setAnimal(animal);
+    }
+    
+    if (suggestions) {
+        suggestions.style.display = 'none';
+    }
+}
+
+// Populate popular animals section
+function loadPopularAnimals() {
+    const popularGrid = document.getElementById('popularAnimals');
+    if (!popularGrid) return;
+    
+    const popularAnimals = [
+        'León 🦁', 'Delfín 🐬', 'Águila 🦅', 'Elefante 🐘',
+        'Tigre 🐅', 'Pingüino 🐧', 'Mariposa 🦋', 'Tiburón 🦈'
+    ];
+    
+    popularGrid.innerHTML = popularAnimals.map((animal, index) => {
+        const name = animal.split(' ')[0];
+        return `
+            <div class="popular-item" onclick="setAnimal('${name}')" style="animation-delay: ${index * 0.1}s">
+                ${animal}
+            </div>
+        `;
+    }).join('');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('.search-form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            const input = document.getElementById('animal');
-            if (input && !input.value.trim()) {
+            if (!handleFormSubmit(form)) {
                 e.preventDefault();
-                alert('Por favor ingresa el nombre de un animal.');
-                input.focus();
             }
         });
     }
+    
+    // Initialize enhanced features
+    initEnhancedSearch();
+    loadPopularAnimals();
     
     // Pre-fill input if animal parameter is provided in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -320,4 +537,22 @@ document.addEventListener('DOMContentLoaded', function() {
             input.focus();
         }
     }
+    
+    // Add enhanced interactions
+    const input = document.getElementById('animal');
+    if (input) {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+    }
+    
+    // Initialize floating animations with stagger
+    const elements = document.querySelectorAll('.feature, .tag, .stat-item');
+    elements.forEach((el, index) => {
+        el.style.animationDelay = `${index * 0.1}s`;
+    });
 });

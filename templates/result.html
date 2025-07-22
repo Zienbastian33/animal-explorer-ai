@@ -43,6 +43,42 @@
             </div>
             {% endif %}
 
+            <!-- Loading Skeleton -->
+            <div class="skeleton-card" id="skeleton-info">
+                <div class="skeleton skeleton-title"></div>
+                <div class="skeleton-grid">
+                    <div class="skeleton-item">
+                        <div class="skeleton skeleton-label"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton skeleton-label"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton skeleton-label"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton skeleton-label"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton skeleton-label"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton skeleton-label"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="skeleton-card" id="skeleton-image">
+                <div class="skeleton skeleton-title"></div>
+                <div class="skeleton skeleton-image"></div>
+            </div>
+
             <div class="results" id="results" style="display: none;">
                 <div class="result-tabs">
                     <button class="tab-btn active" onclick="showTab('info')">📋 Información</button>
@@ -95,7 +131,7 @@
     <script>
         const sessionId = "{{ session_id }}";
         const animal = "{{ animal }}";
-        const rateLimited = {{ 'true' if rate_limited else 'false' }};
+        const rateLimited = {% if rate_limited %}true{% else %}false{% endif %};
     </script>
     <script src="/static/script.js"></script>
     <script>
