@@ -12,6 +12,7 @@ from ai_services import animal_info_service, image_generation_service
 from config import config
 from session_service import session_service
 from rate_limiter import rate_limiter
+from cache_service import cache_service
 import re
 
 # Initialize FastAPI app
@@ -264,7 +265,7 @@ async def get_status(session_id: str):
     return JSONResponse(session_data)
 
 async def process_animal_research_sync(session_id: str, animal: str):
-    """Process animal research synchronously for serverless compatibility"""
+    """Process animal research synchronously for serverless compatibility with intelligent caching"""
     try:
         # Obtener datos actuales de la sesión
         session_data = session_service.get_session(session_id)
@@ -272,8 +273,31 @@ async def process_animal_research_sync(session_id: str, animal: str):
             print(f"[ERROR] Session {session_id} not found during processing")
             return
         
+        # 🚀 CACHE CHECK: Verificar si tenemos datos completos en caché
+        print(f"[CACHE] Checking cache for animal: {animal}")
+        cached_data = cache_service.get_complete_cached_animal(animal)
+        
+        if cached_data:
+            print(f"[CACHE HIT] Complete data found for {animal}")
+            # Usar datos cacheados - súper rápido!
+            session_data["status"] = "completed"
+            session_data["info"] = cached_data['info']
+            session_data["image"] = cached_data['image']
+            session_data["from_cache"] = True
+            session_data["cached_at"] = cached_data['cached_at']
+            
+            # Actualizar sesión y trackear búsqueda
+            session_service.update_session(session_id, session_data)
+            cache_service.track_animal_search(animal)
+            
+            print(f"[CACHE] Served {animal} from cache - ultra fast response!")
+            return
+        
+        # 📊 ANALYTICS: Trackear búsqueda aunque no esté en caché
+        cache_service.track_animal_search(animal)
+        
         # Update status: getting info
-        session_data["status"] = "getting_info"
+        session_data["status"] = "getting_info" 
         session_service.update_session(session_id, session_data)
         
         # Step 1: Get animal information
@@ -364,8 +388,28 @@ async def process_animal_research_sync(session_id: str, animal: str):
             
         session_data["image"] = image_result['image_data_url']
         
+        # 💾 CACHE STORAGE: Guardar datos para futuras consultas
+        print(f"[CACHE] Storing data for future use: {animal}")
+        
+        # Cachear información del animal
+        info_cached = cache_service.cache_animal_info(
+            animal=animal,
+            info_data=session_data["info"],
+            english_name=english_name
+        )
+        
+        # Cachear imagen del animal
+        image_cached = cache_service.cache_animal_image(
+            animal=animal,
+            image_data_url=session_data["image"],
+            english_name=english_name
+        )
+        
+        print(f"[CACHE] Info cached: {info_cached}, Image cached: {image_cached}")
+        
         # Complete
         session_data["status"] = "completed"
+        session_data["cached"] = info_cached and image_cached  # Indicar si se guardó en caché
         session_service.update_session(session_id, session_data)
         
         print(f"[INFO] Successfully completed research for session {session_id}")
@@ -608,6 +652,97 @@ async def test_animal_validation(animal: str):
             "status": "error", 
             "error": str(e)
         }
+
+# 📊 CACHE AND ANALYTICS ENDPOINTS
+
+@app.get("/api/cache/stats")
+async def get_cache_stats():
+    """Obtener estadísticas del sistema de caché"""
+    try:
+        stats = cache_service.get_cache_stats()
+        return JSONResponse(stats)
+    except Exception as e:
+        return JSONResponse({
+            "error": "Failed to get cache stats",
+            "details": str(e)
+        }, status_code=500)
+
+@app.get("/api/popular-animals")
+async def get_popular_animals(limit: int = 10):
+    """Obtener animales más buscados"""
+    try:
+        # Limitar el número para no sobrecargar
+        limit = min(limit, 50)  # Máximo 50
+        popular = cache_service.get_popular_animals(limit)
+        
+        return JSONResponse({
+            "popular_animals": popular,
+            "total_count": len(popular),
+            "limit_applied": limit
+        })
+    except Exception as e:
+        return JSONResponse({
+            "error": "Failed to get popular animals",
+            "details": str(e)
+        }, status_code=500)
+
+@app.get("/api/cache/health")
+async def cache_health_check():
+    """Verificar salud del sistema de caché"""
+    try:
+        # Test básico de lectura/escritura
+        test_key = "health_check_test"
+        test_data = {"timestamp": int(time.time()), "test": True}
+        
+        # Intentar escribir
+        cache_service._set_cache(f"test:{test_key}", test_data, 60)
+        
+        # Intentar leer
+        retrieved = cache_service._get_cache(f"test:{test_key}")
+        
+        # Limpiar
+        if cache_service.redis_service.redis_client:
+            cache_service.redis_service.redis_client.delete(f"test:{test_key}")
+        
+        return JSONResponse({
+            "cache_healthy": retrieved is not None,
+            "redis_available": bool(cache_service.redis_service.redis_client),
+            "test_successful": retrieved == test_data if retrieved else False,
+            "timestamp": int(time.time())
+        })
+    except Exception as e:
+        return JSONResponse({
+            "cache_healthy": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/cache/upstash-stats")
+async def get_upstash_efficiency():
+    """Obtener estadísticas de eficiencia específicas para Upstash"""
+    try:
+        stats = cache_service.get_upstash_efficiency_stats()
+        return JSONResponse(stats)
+    except Exception as e:
+        return JSONResponse({
+            "error": "Failed to get Upstash efficiency stats",
+            "details": str(e)
+        }, status_code=500)
+
+@app.delete("/api/cache/clear")
+async def clear_cache_endpoint():
+    """Limpiar caché expirado (solo para desarrollo/mantenimiento)"""
+    try:
+        result = cache_service.clear_expired_cache()
+        return JSONResponse({
+            "message": "Cache cleanup completed",
+            "cleared_items": result["cleared_items"],
+            "timestamp": result["timestamp"]
+        })
+    except Exception as e:
+        return JSONResponse({
+            "error": "Failed to clear cache",
+            "details": str(e)
+        }, status_code=500)
 
 if __name__ == "__main__":
     import uvicorn

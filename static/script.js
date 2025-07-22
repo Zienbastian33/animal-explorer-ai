@@ -398,10 +398,15 @@ function shuffleTags() {
         {name: 'Nutria', emoji: '🦦'}, {name: 'Loro', emoji: '🦜'},
         {name: 'Panda', emoji: '🐼'}, {name: 'Rana', emoji: '🐸'},
         {name: 'Ballena', emoji: '🐋'}, {name: 'Búho', emoji: '🦉'},
-        {name: 'Canguro', emoji: '🦘'}, {name: 'Zebra', emoji: '🦓'}
+        {name: 'Canguro', emoji: '🦘'}, {name: 'Zebra', emoji: '🦓'},
+        {name: 'Tigre', emoji: '🐅'}, {name: 'Oso', emoji: '🐻'},
+        {name: 'Zorro', emoji: '🦊'}, {name: 'Lobo', emoji: '🐺'},
+        {name: 'Hipopótamo', emoji: '🦛'}, {name: 'Rinoceronte', emoji: '🦏'},
+        {name: 'Jirafa', emoji: '🦒'}, {name: 'Camello', emoji: '🐪'},
+        {name: 'Serpiente', emoji: '🐍'}, {name: 'Escorpión', emoji: '🦂'}
     ];
     
-    const tags = document.querySelectorAll('.tag');
+    const tags = document.querySelectorAll('.example-tags .tag'); // Solo los tags de ejemplo, no el shuffle
     const shuffleBtn = document.querySelector('.tag-shuffle');
     
     // Disable button during animation
@@ -411,9 +416,13 @@ function shuffleTags() {
         shuffleBtn.style.transform = 'scale(0.95)';
     }
     
+    // Crear una lista de animales únicos para esta ronda
+    const shuffledAnimals = [...allAnimals].sort(() => Math.random() - 0.5);
+    const selectedAnimals = shuffledAnimals.slice(0, tags.length);
+    
     tags.forEach((tag, index) => {
         setTimeout(() => {
-            const randomAnimal = allAnimals[Math.floor(Math.random() * allAnimals.length)];
+            const selectedAnimal = selectedAnimals[index];
             const emoji = tag.querySelector('.tag-emoji');
             const text = tag.querySelector('.tag-text');
             
@@ -421,9 +430,9 @@ function shuffleTags() {
             tag.style.transform = 'rotateY(90deg) scale(0.8)';
             
             setTimeout(() => {
-                if (emoji) emoji.textContent = randomAnimal.emoji;
-                if (text) text.textContent = randomAnimal.name;
-                tag.onclick = () => setAnimal(randomAnimal.name);
+                if (emoji) emoji.textContent = selectedAnimal.emoji;
+                if (text) text.textContent = selectedAnimal.name;
+                tag.onclick = () => setAnimal(selectedAnimal.name);
                 
                 // Flip back
                 tag.style.transform = 'rotateY(0deg) scale(1)';

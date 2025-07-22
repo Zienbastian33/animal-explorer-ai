@@ -111,7 +111,6 @@ env.bak/
 venv.bak/
 CLAUDE.md
 past_context.md
-cache_service.py
 
 # Spyder project settings
 .spyderproject
