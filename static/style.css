@@ -23,8 +23,12 @@ html {
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
 }
 
 @keyframes progressFlow {
@@ -218,7 +222,16 @@ main:hover {
 }
 
 /* Form Styles with enhanced animations */
+.search-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
 .search-form {
+    width: 100%;
+    max-width: 600px; /* Max width for the form */
+    text-align: center; /* Center align the label */
     margin-bottom: 40px;
     position: relative;
 }
@@ -245,8 +258,7 @@ main:hover {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    max-width: 600px;
-    margin: 0 auto;
+    /* margin: 0 auto; /* No longer needed here */
     text-align: center;
 }
 
@@ -506,8 +518,13 @@ main:hover {
     box-shadow: 
         0 8px 16px rgba(0, 0, 0, 0.1),
         inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    animation: featureFloat 4s ease-in-out infinite;
-    animation-delay: calc(var(--feature-index, 0) * 0.5s);
+}
+
+.feature:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 
+        0 12px 24px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 @keyframes featureFloat {
@@ -1142,6 +1159,17 @@ main:hover {
 .tech-badge:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: scale(1.05);
+}
+
+.feature {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 25px;
+    border-radius: 16px;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: fadeInUp 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) both;
+    opacity: 1; /* Fix for hover-out fade flicker */
 }
 
 .footer-links {
