@@ -82,11 +82,10 @@ vercel env add REDIS_URL
 
 ### 1. Configurar Variables de Entorno en Vercel
 ```bash
-# Variables existentes
-vercel env add OPENAI_API_KEY
-vercel env add IMAGE_GENERATION_FUNCTION_URL
+# Variable principal requerida
+vercel env add GEMINI_API_KEY
 
-# Nueva variable para sesiones
+# Variable para sesiones (opcional pero recomendado)
 vercel env add REDIS_URL
 ```
 
@@ -172,9 +171,9 @@ vercel logs --follow
 ## Próximos Pasos Opcionales
 
 1. **Monitoreo Avanzado**: Integrar con Sentry o similar
-2. **Caché de Resultados**: Cachear respuestas de ChatGPT/Vertex AI
-3. **Rate Limiting**: Implementar límites por IP
-4. **Analytics**: Tracking de uso y métricas
+2. **Caché de Resultados**: Sistema de caché inteligente ya implementado con Redis
+3. **Rate Limiting**: Sistema de límites por IP ya implementado
+4. **Analytics**: Tracking de animales populares ya implementado
 
 ---
 

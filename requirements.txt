@@ -1,5 +1,5 @@
-# OpenAI API
-openai==1.54.3
+# Google Gemini API (para información e imágenes)
+google-genai==0.5.0
 
 # Web Framework
 fastapi==0.108.0
@@ -20,4 +20,4 @@ aiofiles==23.2.1
 redis==5.0.1
 
 # Image processing (for web display)
-pillow==10.1.0
+pillow>=10.0.0

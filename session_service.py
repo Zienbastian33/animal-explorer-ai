@@ -31,8 +31,8 @@ class SessionService:
                     socket_timeout=5,
                     socket_connect_timeout=5,
                     retry_on_timeout=True,
-                    ssl=True,  # Forzar SSL
-                    ssl_cert_reqs=None # Deshabilitar requerimientos de certificado SSL
+                    # ssl=True,  # Deshabilitado para desarrollo local
+                    # ssl_cert_reqs=None # Deshabilitar requerimientos de certificado SSL
                 )
                 # Test connection
                 self.redis_client.ping()

@@ -6,18 +6,27 @@ from io import BytesIO
 from PIL import Image
 import httpx
 
-# OpenAI
-from openai import OpenAI, AsyncOpenAI
-import openai
-
 from config import config
 
 class AnimalInfoService:
-    """Service for getting animal information from ChatGPT"""
+    """Service for getting animal information from Gemini 3 Flash"""
     
     def __init__(self):
-        self.client = OpenAI(api_key=config.openai_api_key)
-        self.async_client = AsyncOpenAI(api_key=config.openai_api_key)
+        try:
+            from google import genai
+            from google.genai import types
+            
+            self.genai = genai
+            self.types = types
+            self.client = genai.Client(api_key=config.gemini_api_key)
+            self.model = config.gemini_text_model
+            print(f"[INFO] Gemini Text Service initialized with model: {self.model}")
+        except ImportError as e:
+            print(f"[ERROR] Failed to import google-genai: {e}")
+            raise
+        except Exception as e:
+            print(f"[ERROR] Failed to initialize Gemini text client: {e}")
+            raise
         
         self.system_prompt = """
         Eres un experto en zoología. PRIMERO valida si el término corresponde a un animal real existente.
@@ -58,205 +67,266 @@ class AnimalInfoService:
         """
     
     def get_animal_info(self, animal_name: str) -> Dict[str, str]:
-        """Get animal information synchronously"""
+        """Get animal information synchronously using Gemini"""
         try:
-            response = self.client.chat.completions.create(
-                model=config.openai_model,
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": f"Información sobre: {animal_name}"}
-                ],
-                temperature=0.3,
-                max_tokens=300
+            # Combinar system prompt con user message para Gemini
+            full_prompt = f"{self.system_prompt}\n\nInformación sobre: {animal_name}"
+            
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=full_prompt,
+                config=self.types.GenerateContentConfig(
+                    temperature=0.3,
+                    max_output_tokens=500,
+                )
             )
             
-            content = response.choices[0].message.content
+            content = response.text
             
             return {
                 "success": True,
                 "content": content,
                 "usage": {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                    "total_tokens": response.usage.total_tokens
+                    "total_tokens": response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') else 0
                 }
             }
             
-        except openai.RateLimitError as e:
-            return {"success": False, "error": "Rate limit exceeded", "details": str(e)}
-        except openai.AuthenticationError as e:
-            return {"success": False, "error": "Authentication failed", "details": str(e)}
-        except openai.APIConnectionError as e:
-            return {"success": False, "error": "Connection failed", "details": str(e)}
         except Exception as e:
-            return {"success": False, "error": "Unexpected error", "details": str(e)}
+            error_msg = str(e)
+            print(f"[ERROR] Gemini text generation error: {error_msg}")
+            
+            if "API key not valid" in error_msg or "UNAUTHENTICATED" in error_msg:
+                return {"success": False, "error": "Authentication failed", "details": "Invalid Gemini API key"}
+            elif "QUOTA_EXCEEDED" in error_msg:
+                return {"success": False, "error": "Rate limit exceeded", "details": str(e)}
+            elif "PERMISSION_DENIED" in error_msg:
+                return {"success": False, "error": "Connection failed", "details": "Permission denied for Gemini API"}
+            else:
+                return {"success": False, "error": "Unexpected error", "details": str(e)}
     
     async def get_animal_info_async(self, animal_name: str) -> Dict[str, str]:
-        """Get animal information asynchronously"""
+        """Get animal information asynchronously using Gemini"""
         try:
-            print(f"[DEBUG] Making OpenAI request for animal: {animal_name}")
-            print(f"[DEBUG] Using model: {config.openai_model}")
-            print(f"[DEBUG] API key present: {bool(config.openai_api_key)}")
-            print(f"[DEBUG] API key length: {len(config.openai_api_key) if config.openai_api_key else 0}")
+            print(f"[DEBUG] Making Gemini request for animal: {animal_name}")
+            print(f"[DEBUG] Using model: {self.model}")
+            print(f"[DEBUG] API key present: {bool(config.gemini_api_key)}")
             
-            response = await self.async_client.chat.completions.create(
-                model=config.openai_model,
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": f"Información sobre: {animal_name}"}
-                ],
-                temperature=0.3,
-                max_tokens=300
+            # Gemini SDK no es completamente async, usar executor
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None,
+                lambda: self.get_animal_info(animal_name)
             )
             
-            content = response.choices[0].message.content
-            print(f"[DEBUG] OpenAI response successful, content length: {len(content)}")
+            if result.get('success'):
+                print(f"[DEBUG] Gemini response successful, content length: {len(result['content'])}")
+            else:
+                print(f"[ERROR] Gemini request failed: {result.get('error')}")
             
-            return {
-                "success": True,
-                "content": content,
-                "usage": {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                    "total_tokens": response.usage.total_tokens
-                }
-            }
+            return result
             
-        except openai.RateLimitError as e:
-            print(f"[ERROR] OpenAI Rate Limit: {str(e)}")
-            return {"success": False, "error": "Rate Limit Error", "details": str(e)}
-        except openai.AuthenticationError as e:
-            print(f"[ERROR] OpenAI Auth Error: {str(e)}")
-            return {"success": False, "error": "Authentication Error - Check API Key", "details": str(e)}
-        except openai.APIConnectionError as e:
-            print(f"[ERROR] OpenAI Connection Error: {str(e)}")
-            return {"success": False, "error": "Connection Error", "details": str(e)}
-        except openai.BadRequestError as e:
-            print(f"[ERROR] OpenAI Bad Request: {str(e)}")
-            return {"success": False, "error": "Bad Request Error", "details": str(e)}
         except Exception as e:
-            print(f"[ERROR] Unexpected OpenAI Error: {str(e)}")
+            print(f"[ERROR] Unexpected Gemini Error: {str(e)}")
             print(f"[ERROR] Error type: {type(e)}")
             return {"success": False, "error": "Unexpected API Error", "details": str(e)}
 
 
 class ImageGenerationService:
-    """Service for generating images using Google Cloud Function"""
+    """Service for generating images using Gemini 3 Pro Image (Nano Banana Pro)"""
     
     def __init__(self):
-        self.cloud_function_url = config.image_generation_function_url
-        self.timeout = 60  # seconds
+        try:
+            from google import genai
+            from google.genai import types
+            
+            self.genai = genai
+            self.types = types
+            self.client = genai.Client(api_key=config.gemini_api_key)
+            self.model = config.gemini_image_model
+            print(f"[INFO] Gemini Image Service initialized with model: {self.model}")
+        except ImportError as e:
+            print(f"[ERROR] Failed to import google-genai: {e}")
+            print("[ERROR] Please install: pip install google-genai")
+            raise
+        except Exception as e:
+            print(f"[ERROR] Failed to initialize Gemini client: {e}")
+            raise
     
     def generate_image(self, animal_name: str) -> Dict[str, any]:
-        """Generate image synchronously via Cloud Function"""
+        """Generate image synchronously using Gemini 3 Pro Image"""
         try:
-            import requests
+            # Create detailed photorealistic prompt for wildlife
+            prompt = f"""Photorealistic portrait of a {animal_name} in its natural habitat. 
+            Wildlife photography style, detailed features, professional quality, natural lighting, 
+            4K resolution. Focus on the animal's distinctive characteristics and natural beauty."""
             
-            payload = {"animal": animal_name}
+            print(f"[DEBUG] Generating image for: {animal_name}")
+            print(f"[DEBUG] Using model: {self.model}")
             
-            response = requests.post(
-                self.cloud_function_url,
-                json=payload,
-                timeout=self.timeout,
-                headers={"Content-Type": "application/json"}
-            )
+            # Generate image with Gemini 3 Pro Image
+            try:
+                # Intentar con ImageConfig si está disponible
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
+                    config=self.types.GenerateContentConfig(
+                        response_modalities=['IMAGE'],
+                        image_config=self.types.ImageConfig(
+                            aspect_ratio="1:1",
+                            image_size="2K"  # High quality 2K resolution
+                        ),
+                    )
+                )
+            except (AttributeError, TypeError) as e:
+                # Fallback: Si ImageConfig no está disponible, usar configuración simplificada
+                print(f"[WARNING] ImageConfig not available, using simplified config: {e}")
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
+                    config=self.types.GenerateContentConfig(
+                        response_modalities=['IMAGE'],
+                    )
+                )
             
-            if response.status_code != 200:
+            # Extract image from response
+            image_base64 = None
+            for part in response.parts:
+                if hasattr(part, 'inline_data') and part.inline_data:
+                    # Get base64 encoded image data
+                    image_bytes = part.inline_data.data
+                    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                    break
+            
+            if not image_base64:
+                print("[ERROR] No image data found in response")
                 return {
                     "success": False,
-                    "error": f"Cloud Function error: {response.status_code}",
-                    "details": response.text
+                    "error": "No image generated",
+                    "details": "Gemini API did not return image data"
                 }
             
-            result = response.json()
-            
-            if not result.get('success'):
-                return result
-            
-            # Return image as base64 data URL directly (no local storage)
-            image_base64 = result['image_base64']
-            filename = result['filename']
-            
-            # Create data URL for direct display
+            filename = f"{animal_name.replace(' ', '_').lower()}_gemini.png"
             data_url = f"data:image/png;base64,{image_base64}"
+            
+            print(f"[SUCCESS] Image generated successfully for {animal_name}")
             
             return {
                 "success": True,
                 "image_data_url": data_url,
                 "image_base64": image_base64,
                 "filename": filename,
-                "prompt": result.get('prompt', '')
+                "prompt": prompt,
+                "model": self.model
             }
             
-        except requests.exceptions.Timeout:
-            return {"success": False, "error": "Request timeout", "details": "Cloud Function took too long to respond"}
-        except requests.exceptions.ConnectionError:
-            return {"success": False, "error": "Connection error", "details": "Could not connect to Cloud Function"}
         except Exception as e:
-            return {"success": False, "error": "Unexpected error", "details": str(e)}
+            error_msg = str(e)
+            print(f"[ERROR] Image generation failed: {error_msg}")
+            
+            if "API key not valid" in error_msg or "UNAUTHENTICATED" in error_msg:
+                return {"success": False, "error": "Authentication error", "details": "Invalid or expired Gemini API key"}
+            elif "QUOTA_EXCEEDED" in error_msg or "quota" in error_msg.lower():
+                return {"success": False, "error": "Quota exceeded", "details": "Gemini API quota limit reached"}
+            elif "PERMISSION_DENIED" in error_msg:
+                return {"success": False, "error": "Permission denied", "details": "API key does not have access to this model"}
+            else:
+                return {"success": False, "error": "Image generation failed", "details": error_msg}
     
     async def generate_image_async(self, animal_name: str) -> Dict[str, any]:
-        """Generate image asynchronously via Cloud Function"""
+        """Generate image asynchronously using Gemini 3 Pro Image"""
         try:
-            print(f"[DEBUG] Making image generation request for: {animal_name}")
-            print(f"[DEBUG] Cloud Function URL: {self.cloud_function_url}")
-            print(f"[DEBUG] URL is set: {bool(self.cloud_function_url)}")
+            # Create detailed photorealistic prompt for wildlife
+            prompt = f"""Photorealistic portrait of a {animal_name} in its natural habitat. 
+            Wildlife photography style, detailed features, professional quality, natural lighting, 
+            4K resolution. Focus on the animal's distinctive characteristics and natural beauty."""
             
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                payload = {"animal": animal_name}
-                print(f"[DEBUG] Payload: {payload}")
-                
-                response = await client.post(
-                    self.cloud_function_url,
-                    json=payload,
-                    headers={"Content-Type": "application/json"}
-                )
-                
-                print(f"[DEBUG] Response status: {response.status_code}")
-                print(f"[DEBUG] Response headers: {dict(response.headers)}")
-                
-                if response.status_code != 200:
-                    error_text = response.text
-                    print(f"[ERROR] Cloud Function failed: {response.status_code}")
-                    print(f"[ERROR] Response body: {error_text}")
-                    return {
-                        "success": False,
-                        "error": f"Cloud Function error: {response.status_code}",
-                        "details": error_text,
-                        "url_used": self.cloud_function_url
-                    }
-                
-                result = response.json()
-                print(f"[DEBUG] Cloud Function response: {result}")
-                
-                if not result.get('success'):
-                    print(f"[ERROR] Cloud Function returned error: {result}")
-                    return result
-                
-                # Return image as base64 data URL directly (no local storage)
-                image_base64 = result['image_base64']
-                filename = result['filename']
-                
-                # Create data URL for direct display
-                data_url = f"data:image/png;base64,{image_base64}"
-                
-                return {
-                    "success": True,
-                    "image_data_url": data_url,
-                    "image_base64": image_base64,
-                    "filename": filename,
-                    "prompt": result.get('prompt', '')
-                }
-                
-        except httpx.TimeoutException as e:
-            print(f"[ERROR] Image generation timeout: {str(e)}")
-            return {"success": False, "error": "Request timeout", "details": "Cloud Function took too long to respond"}
-        except httpx.ConnectError as e:
-            print(f"[ERROR] Image generation connection error: {str(e)}")
-            return {"success": False, "error": "Connection error", "details": f"Could not connect to Cloud Function: {str(e)}"}
+            print(f"[DEBUG] Generating image async for: {animal_name}")
+            print(f"[DEBUG] Using model: {self.model}")
+            
+            # Gemini SDK is not fully async, run in executor to avoid blocking
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None,
+                lambda: self._generate_sync(animal_name, prompt)
+            )
+            
+            return result
+            
         except Exception as e:
-            print(f"[ERROR] Unexpected image generation error: {str(e)}")
-            return {"success": False, "error": "Unexpected error", "details": str(e)}
+            error_msg = str(e)
+            print(f"[ERROR] Async image generation failed: {error_msg}")
+            
+            if "API key not valid" in error_msg or "UNAUTHENTICATED" in error_msg:
+                return {"success": False, "error": "Authentication error", "details": "Invalid or expired Gemini API key"}
+            elif "QUOTA_EXCEEDED" in error_msg or "quota" in error_msg.lower():
+                return {"success": False, "error": "Quota exceeded", "details": "Gemini API quota limit reached"}
+            elif "PERMISSION_DENIED" in error_msg:
+                return {"success": False, "error": "Permission denied", "details": "API key does not have access to this model"}
+            else:
+                return {"success": False, "error": "Image generation failed", "details": error_msg}
+    
+    def _generate_sync(self, animal_name: str, prompt: str) -> Dict[str, any]:
+        """Internal synchronous generation method for async wrapper"""
+        try:
+            # Generate image with Gemini 3 Pro Image
+            try:
+                # Intentar con ImageConfig si está disponible
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
+                    config=self.types.GenerateContentConfig(
+                        response_modalities=['IMAGE'],
+                        image_config=self.types.ImageConfig(
+                            aspect_ratio="1:1",
+                            image_size="2K"  # High quality 2K resolution
+                        ),
+                    )
+                )
+            except (AttributeError, TypeError) as e:
+                # Fallback: Si ImageConfig no está disponible, usar configuración simplificada
+                print(f"[WARNING] ImageConfig not available in _generate_sync, using simplified config: {e}")
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
+                    config=self.types.GenerateContentConfig(
+                        response_modalities=['IMAGE'],
+                    )
+                )
+            
+            # Extract image from response
+            image_base64 = None
+            for part in response.parts:
+                if hasattr(part, 'inline_data') and part.inline_data:
+                    # Get base64 encoded image data
+                    image_bytes = part.inline_data.data
+                    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                    break
+            
+            if not image_base64:
+                print("[ERROR] No image data found in response")
+                return {
+                    "success": False,
+                    "error": "No image generated",
+                    "details": "Gemini API did not return image data"
+                }
+            
+            filename = f"{animal_name.replace(' ', '_').lower()}_gemini.png"
+            data_url = f"data:image/png;base64,{image_base64}"
+            
+            print(f"[SUCCESS] Image generated successfully for {animal_name}")
+            
+            return {
+                "success": True,
+                "image_data_url": data_url,
+                "image_base64": image_base64,
+                "filename": filename,
+                "prompt": prompt,
+                "model": self.model
+            }
+            
+        except Exception as e:
+            print(f"[ERROR] Internal generation error: {e}")
+            raise
 
 
 # Service instances

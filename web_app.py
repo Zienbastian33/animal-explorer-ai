@@ -35,7 +35,7 @@ from typing import Optional, Tuple
 
 def is_valid_animal(animal_info: str) -> Tuple[bool, str, list]:
     """
-    Check if animal is valid based on OpenAI response
+    Check if animal is valid based on Gemini response
     Returns: (is_valid, reason, suggestions)
     """
     try:
@@ -90,7 +90,7 @@ def is_valid_animal(animal_info: str) -> Tuple[bool, str, list]:
                 return False, reason, suggestions
         
         # Fallback: if no validity marker found, assume invalid
-        print("[WARNING] No validity marker found in OpenAI response")
+        print("[WARNING] No validity marker found in Gemini response")
         return False, "Respuesta inesperada del sistema", []
         
     except Exception as e:
@@ -98,7 +98,7 @@ def is_valid_animal(animal_info: str) -> Tuple[bool, str, list]:
         return False, "Error de validación", []
 
 def extract_english_name(animal_info: str) -> str:
-    """Extract English animal name from OpenAI response for image generation"""
+    """Extract English animal name from Gemini response for image generation"""
     try:
         # Look for the "Nombre_EN:" field in the response
         match = re.search(r'\*\*Nombre_EN:\*\*\s*([^\n\r]+)', animal_info, re.IGNORECASE)
@@ -316,8 +316,8 @@ async def process_animal_research_sync(session_id: str, animal: str):
         
         # Step 1.5: Validate if it's a real animal BEFORE generating expensive image
         print(f"[DEBUG] Starting validation for: {animal}")
-        print(f"[DEBUG] OpenAI response length: {len(info_result['content'])}")
-        print(f"[DEBUG] OpenAI response preview: {info_result['content'][:200]}...")
+        print(f"[DEBUG] Gemini response length: {len(info_result['content'])}")
+        print(f"[DEBUG] Gemini response preview: {info_result['content'][:200]}..."))
         
         is_valid, invalid_reason, suggestions = is_valid_animal(info_result['content'])
         print(f"[DEBUG] Validation result: valid={is_valid}, reason='{invalid_reason}', suggestions={suggestions}")
@@ -444,32 +444,32 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "message": "Animal Explorer API is running"}
 
-@app.get("/test/openai")
-async def test_openai():
-    """Test OpenAI API connectivity"""
+@app.get("/test/gemini")
+async def test_gemini():
+    """Test Gemini API connectivity"""
     try:
-        print("[DEBUG] Testing OpenAI API connection...")
+        print("[DEBUG] Testing Gemini API connection...")
         result = await animal_info_service.get_animal_info_async("león")
-        print(f"[DEBUG] OpenAI test result: {result.get('success')}")
+        print(f"[DEBUG] Gemini test result: {result.get('success')}")
         
         if result.get('success'):
             return {
                 "status": "success",
-                "message": "OpenAI API is working",
+                "message": "Gemini API is working",
                 "sample_response": result.get('content', '')[:100] + "..."
             }
         else:
             return {
                 "status": "error",
-                "message": "OpenAI API failed",
+                "message": "Gemini API failed",
                 "error": result.get('error'),
                 "details": result.get('details')
             }
     except Exception as e:
-        print(f"[ERROR] OpenAI test failed: {str(e)}")
+        print(f"[ERROR] Gemini test failed: {str(e)}")
         return {
             "status": "error",
-            "message": "OpenAI test failed",
+            "message": "Gemini test failed",
             "error": str(e)
         }
 
@@ -479,64 +479,24 @@ async def test_config():
     import os
     
     # Get raw environment variables
-    raw_openai_key = os.getenv("OPENAI_API_KEY")
-    raw_image_url = os.getenv("IMAGE_GENERATION_FUNCTION_URL")
+    raw_gemini_key = os.getenv("GEMINI_API_KEY")
     raw_redis_url = os.getenv("REDIS_URL")
     
     return {
         "raw_env_vars": {
-            "OPENAI_API_KEY_set": bool(raw_openai_key),
-            "OPENAI_API_KEY_length": len(raw_openai_key) if raw_openai_key else 0,
-            "OPENAI_API_KEY_preview": f"{raw_openai_key[:4]}...{raw_openai_key[-4:]}" if raw_openai_key and len(raw_openai_key) > 8 else "INVALID_OR_MISSING",
-            "IMAGE_GENERATION_FUNCTION_URL_set": bool(raw_image_url),
+            "GEMINI_API_KEY_set": bool(raw_gemini_key),
+            "GEMINI_API_KEY_length": len(raw_gemini_key) if raw_gemini_key else 0,
+            "GEMINI_API_KEY_preview": f"{raw_gemini_key[:4]}...{raw_gemini_key[-4:]}" if raw_gemini_key and len(raw_gemini_key) > 8 else "INVALID_OR_MISSING",
             "REDIS_URL_set": bool(raw_redis_url)
         },
         "config_vars": {
-            "openai_key_set": bool(config.openai_api_key),
-            "openai_key_length": len(config.openai_api_key) if config.openai_api_key else 0,
-            "image_function_url_set": bool(config.image_generation_function_url),
-            "openai_model": config.openai_model
+            "gemini_key_set": bool(config.gemini_api_key),
+            "gemini_key_length": len(config.gemini_api_key) if config.gemini_api_key else 0,
+            "gemini_text_model": config.gemini_text_model,
+            "gemini_image_model": config.gemini_image_model
         },
         "environment": os.getenv("VERCEL_ENV", "development")
     }
-
-@app.get("/test/simple-openai")
-async def test_simple_openai():
-    """Simple OpenAI test without services wrapper"""
-    import os
-    from openai import AsyncOpenAI
-    
-    try:
-        # Get API key directly
-        api_key = os.getenv("OPENAI_API_KEY")
-        
-        if not api_key:
-            return {"error": "No API key found in environment"}
-        
-        # Create client directly
-        client = AsyncOpenAI(api_key=api_key)
-        
-        # Make simple request
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "user", "content": "Say hello"}
-            ],
-            max_tokens=10
-        )
-        
-        return {
-            "success": True,
-            "response": response.choices[0].message.content,
-            "model": response.model
-        }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "error_type": str(type(e))
-        }
 
 @app.get("/test/image")
 async def test_image_generation():
@@ -744,6 +704,44 @@ async def clear_cache_endpoint():
             "details": str(e)
         }, status_code=500)
 
+@app.get("/test/gemini-only/{animal}")
+async def test_gemini_only(animal: str):
+    """
+    🧪 Endpoint de prueba: Genera imagen solo con Gemini (sin OpenAI)
+    Útil para verificar que Gemini funciona mientras configuras OpenAI
+    """
+    try:
+        print(f"[TEST] Generando imagen solo con Gemini para: {animal}")
+        
+        # Generar imagen directamente con Gemini
+        result = await image_generation_service.generate_image_async(animal)
+        
+        if result.get('success'):
+            return {
+                "success": True,
+                "message": f"✅ Gemini generó imagen para '{animal}' correctamente",
+                "animal": animal,
+                "model": result.get('model'),
+                "image_url": result.get('image_data_url'),
+                "filename": result.get('filename'),
+                "note": "Esta prueba solo usa Gemini. Para usar el sistema completo, configura OPENAI_API_KEY"
+            }
+        else:
+            return {
+                "success": False,
+                "message": "❌ Error al generar imagen con Gemini",
+                "error": result.get('error'),
+                "details": result.get('details'),
+                "animal": animal
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "animal": animal
+        }
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8080)
