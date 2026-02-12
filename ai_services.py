@@ -192,21 +192,33 @@ class ImageGenerationService:
                     )
                 )
             
-            # Extract image from response
+            # Extract image from response - usando el mismo método robusto
+            print(f"[DEBUG] Response type in generate_image: {type(response)}")
             image_base64 = None
-            for part in response.parts:
-                if hasattr(part, 'inline_data') and part.inline_data:
-                    # Get base64 encoded image data
-                    image_bytes = part.inline_data.data
-                    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-                    break
+            
+            # Intentar diferentes métodos de extracción
+            if hasattr(response, 'parts'):
+                for part in response.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        image_bytes = part.inline_data.data
+                        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                        break
+            elif hasattr(response, 'candidates'):
+                for candidate in response.candidates:
+                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                        for part in candidate.content.parts:
+                            if hasattr(part, 'inline_data') and part.inline_data:
+                                image_bytes = part.inline_data.data
+                                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                                break
             
             if not image_base64:
-                print("[ERROR] No image data found in response")
+                print("[ERROR] No image data found in response (generate_image)")
+                print(f"[ERROR] Available attributes: {[a for a in dir(response) if not a.startswith('_')]}")
                 return {
                     "success": False,
                     "error": "No image generated",
-                    "details": "Gemini API did not return image data"
+                    "details": "Gemini API did not return image data in expected format"
                 }
             
             filename = f"{animal_name.replace(' ', '_').lower()}_gemini.png"
@@ -301,21 +313,58 @@ class ImageGenerationService:
                     )
                 )
             
-            # Extract image from response
+            # Debug: Ver estructura de la respuesta
+            print(f"[DEBUG] Response type: {type(response)}")
+            print(f"[DEBUG] Response attributes: {dir(response)}")
+            
+            # Extract image from response - manejo robusto de diferentes estructuras
             image_base64 = None
-            for part in response.parts:
-                if hasattr(part, 'inline_data') and part.inline_data:
-                    # Get base64 encoded image data
-                    image_bytes = part.inline_data.data
-                    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-                    break
+            
+            # Método 1: Intentar acceder a parts (estructura antigua)
+            if hasattr(response, 'parts'):
+                print("[DEBUG] Response has 'parts' attribute")
+                for part in response.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        image_bytes = part.inline_data.data
+                        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                        print("[DEBUG] Image extracted from parts.inline_data")
+                        break
+            
+            # Método 2: Intentar acceder directamente a candidates
+            if not image_base64 and hasattr(response, 'candidates'):
+                print("[DEBUG] Trying to extract from candidates")
+                for candidate in response.candidates:
+                    if hasattr(candidate, 'content'):
+                        content = candidate.content
+                        if hasattr(content, 'parts'):
+                            for part in content.parts:
+                                if hasattr(part, 'inline_data') and part.inline_data:
+                                    image_bytes = part.inline_data.data
+                                    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                                    print("[DEBUG] Image extracted from candidates.content.parts")
+                                    break
+            
+            # Método 3: Intentar acceder a text o image directamente
+            if not image_base64 and hasattr(response, 'image'):
+                print("[DEBUG] Trying to extract from response.image")
+                image_base64 = base64.b64encode(response.image).decode('utf-8')
+                print("[DEBUG] Image extracted from response.image")
+            
+            # Método 4: Buscar en cualquier atributo que contenga 'data' o 'image'
+            if not image_base64:
+                print("[DEBUG] Searching for image in all response attributes")
+                for attr_name in dir(response):
+                    if not attr_name.startswith('_'):
+                        attr_value = getattr(response, attr_name, None)
+                        print(f"[DEBUG] Checking attribute: {attr_name} = {type(attr_value)}")
             
             if not image_base64:
                 print("[ERROR] No image data found in response")
+                print(f"[ERROR] Response content: {response}")
                 return {
                     "success": False,
                     "error": "No image generated",
-                    "details": "Gemini API did not return image data"
+                    "details": "Gemini API did not return image data in expected format"
                 }
             
             filename = f"{animal_name.replace(' ', '_').lower()}_gemini.png"
