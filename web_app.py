@@ -373,7 +373,30 @@ async def process_animal_research_sync(session_id: str, animal: str):
         session_service.update_session(session_id, session_data)
         
         # Step 2: Generate image with English name (cost incurred only for valid animals)
-        image_result = await image_generation_service.generate_image_async(english_name)
+        print(f"[INFO] Starting image generation for: {english_name}")
+        print(f"[INFO] Timestamp: {time.time()}")
+        
+        try:
+            # Set timeout for image generation (50 seconds to account for Vercel limits)
+            image_result = await asyncio.wait_for(
+                image_generation_service.generate_image_async(english_name),
+                timeout=50.0
+            )
+            print(f"[INFO] Image generation completed at: {time.time()}")
+        except asyncio.TimeoutError:
+            print(f"[ERROR] Image generation timed out after 50 seconds for: {english_name}")
+            image_result = {
+                "success": False,
+                "error": "Image generation timeout",
+                "details": "The image generation took too long. This may be a temporary issue. Please try again."
+            }
+        except Exception as gen_error:
+            print(f"[ERROR] Image generation exception: {gen_error}")
+            image_result = {
+                "success": False,
+                "error": "Image generation error",
+                "details": str(gen_error)
+            }
         
         # Obtener datos actualizados nuevamente
         session_data = session_service.get_session(session_id)

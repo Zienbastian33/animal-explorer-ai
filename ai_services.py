@@ -1,6 +1,8 @@
 import os
 import base64
 import asyncio
+import time
+import traceback
 from typing import Dict, Optional, Tuple
 from io import BytesIO
 from PIL import Image
@@ -160,8 +162,10 @@ class ImageGenerationService:
             Wildlife photography style, detailed features, professional quality, natural lighting, 
             4K resolution. Focus on the animal's distinctive characteristics and natural beauty."""
             
-            print(f"[DEBUG] Generating image for: {animal_name}")
-            print(f"[DEBUG] Using model: {self.model}")
+            print(f"[IMAGE] Generating image for: {animal_name}")
+            print(f"[IMAGE] Using model: {self.model}")
+            print(f"[IMAGE] API key configured: {bool(self.client)}")
+            print(f"[IMAGE] Starting generation at: {time.time()}")
             
             # Generate image with Gemini 3 Pro Image
             try:
@@ -222,6 +226,10 @@ class ImageGenerationService:
         except Exception as e:
             error_msg = str(e)
             print(f"[ERROR] Image generation failed: {error_msg}")
+            print(f"[ERROR] Error type: {type(e).__name__}")
+            print(f"[ERROR] Full traceback available")
+            import traceback
+            traceback.print_exc()
             
             if "API key not valid" in error_msg or "UNAUTHENTICATED" in error_msg:
                 return {"success": False, "error": "Authentication error", "details": "Invalid or expired Gemini API key"}
