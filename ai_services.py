@@ -74,16 +74,26 @@ class AnimalInfoService:
             # Combinar system prompt con user message para Gemini
             full_prompt = f"{self.system_prompt}\n\nInformación sobre: {animal_name}"
             
+            print(f"[DEBUG] Generating text with max_output_tokens=1000")
             response = self.client.models.generate_content(
                 model=self.model,
                 contents=full_prompt,
                 config=self.types.GenerateContentConfig(
                     temperature=0.3,
-                    max_output_tokens=500,
+                    max_output_tokens=1000,
                 )
             )
             
+            # Debug: check response structure
+            if hasattr(response, 'candidates') and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'finish_reason'):
+                    print(f"[DEBUG] Finish reason: {candidate.finish_reason}")
+                if hasattr(candidate, 'safety_ratings'):
+                    print(f"[DEBUG] Safety ratings: {candidate.safety_ratings}")
+            
             content = response.text
+            print(f"[DEBUG] Retrieved text length: {len(content)}")
             
             return {
                 "success": True,
