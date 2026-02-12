@@ -11,7 +11,7 @@ class RateLimiter:
     def __init__(self):
         """Inicializar el rate limiter con configuración"""
         # Configuración de límites
-        self.MINUTE_LIMIT = 1       # 1 consulta por minuto
+        self.MINUTE_LIMIT = 5       # 5 consultas por minuto (aumentado de 1)
         self.HOUR_LIMIT = 20        # 20 consultas por hora  
         self.DAY_LIMIT = 60         # 60 consultas por día
         
