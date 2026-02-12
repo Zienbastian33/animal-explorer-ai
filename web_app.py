@@ -317,7 +317,7 @@ async def process_animal_research_sync(session_id: str, animal: str):
         # Step 1.5: Validate if it's a real animal BEFORE generating expensive image
         print(f"[DEBUG] Starting validation for: {animal}")
         print(f"[DEBUG] Gemini response length: {len(info_result['content'])}")
-        print(f"[DEBUG] Gemini response preview: {info_result['content'][:200]}..."))
+        print(f"[DEBUG] Gemini response preview: {info_result['content'][:200]}...")
         
         is_valid, invalid_reason, suggestions = is_valid_animal(info_result['content'])
         print(f"[DEBUG] Validation result: valid={is_valid}, reason='{invalid_reason}', suggestions={suggestions}")
