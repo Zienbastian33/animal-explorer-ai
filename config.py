@@ -18,7 +18,7 @@ class Config:
     """Application configuration"""
 
     # Gemini API Settings
-    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "REDACTED_API_KEY")
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY")
     gemini_text_model: str = "gemini-3-flash-preview"  # Para información de animales
     gemini_image_model: str = "gemini-3-pro-image-preview"  # Para generación de imágenes
 
